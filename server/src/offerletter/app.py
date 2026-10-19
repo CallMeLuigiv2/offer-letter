@@ -55,8 +55,20 @@ def create_app(settings: Settings, runner: TeammateRunner | None = None, command
     async def api_error(_: Request, exc: ApiError) -> JSONResponse:
         return JSONResponse({"error": exc.message}, status_code=exc.status)
 
+    index_html = settings.web_dist / "index.html" if settings.web_dist else None
+    asset_exts = {"png", "webp", "jpg", "jpeg", "gif", "svg", "ico", "js", "mjs", "css", "map", "json",
+                  "tmj", "tsj", "woff", "woff2", "ttf", "ogg", "mp3", "wav", "txt", "html"}
+
     @app.exception_handler(StarletteHTTPException)
-    async def http_error(_: Request, exc: StarletteHTTPException) -> JSONResponse:
+    async def http_error(request: Request, exc: StarletteHTTPException) -> JSONResponse | FileResponse:
+        # Client-side routes (/tickets/KLN-01, /channels/kilnworks.serving, /office) aren't files,
+        # so a refresh or a deep link would 404. Hand those back to the single-page app; API and
+        # asset misses stay 404. Channel ids contain dots, so check for real asset extensions.
+        path = request.url.path
+        ext = path.rsplit("/", 1)[-1].rpartition(".")[2].lower() if "." in path.rsplit("/", 1)[-1] else ""
+        if (exc.status_code == 404 and request.method == "GET" and index_html and index_html.is_file()
+                and not path.startswith(("/api/", "/ws", "/portraits/")) and ext not in asset_exts):
+            return FileResponse(index_html, media_type="text/html")
         return JSONResponse({"error": str(exc.detail)}, status_code=exc.status_code)
 
     @app.exception_handler(RequestValidationError)
