@@ -92,6 +92,7 @@ Each frame: `{"type": "<type>", "data": {...}}`.
 | `stage.result` | the stage_result row |
 | `governor.updated` | the governor row |
 | `notice` | `{level: "info"/"warn", text}` |
+| `explain.turn` | the explain_turn row (incl. optional `expression`) |
 
 ## 4. HTTP API (JSON, prefix `/api`)
 
@@ -122,7 +123,16 @@ Errors: HTTP 4xx/5xx with `{"error": "<plain sentence saying what to do>"}`.
 | `GET /tickets/{id}/change` | → `{request_md, from_persona, branch_hint}` |
 | `POST /tickets/{id}/change/check` | `{branch}` → `{passed, tests: [{name, passed, output}], debrief_md}`; runs the kit's hidden grader against his pushed branch |
 | `POST /tickets/{id}/own` | `{confirm: true, visibility: "private"}` → `{repo_url}`; only on his click; creates a GitHub repo with `gh` and pushes. Never automatic. |
-| `GET /governor` | → governor row |
+| `GET /governor` | → governor row (`resets_at` = epoch seconds) |
+| `GET /tickets/{id}/debriefs` | → `[{stage, body_md, created_at}]` (also inside `stage_results[].detail_json.debrief_md`) |
+| `POST /clock-in` | `{minutes}` → `{standup_channel_id}`; the tech lead posts a standup prompt; session length recorded |
+
+Contract notes added 2026-10-19 (server ↔ web reconciliation):
+- `GET /state` also returns `setup` (same shape as from accept: `{title, steps:[{id, label, path?, command?, detail?}]}`, with a step `id: "clone"` carrying his clone path).
+- Quiz answers: the option **string** for mcq/which_test; typed text for predict_output (compared after trimming and normalising whitespace).
+- `POST /tickets/{id}/explain/messages` → `{turn, player_turn}` where `turn` is the teammate's reply; explain turns may carry `expression` (neutral, happy, skeptical, thinking, concerned, surprised, laughing).
+- Message `author` is `player`, a persona id like `kilnworks.dana`, or `system`. DM channel ids end with `.<persona slug>`; `members_json` lists persona ids.
+- Static: `/portraits/<company>/<persona>/<expression>.png` from `content/companies/<company>/portraits/<persona>/`; `/office/**` from `web/public/office/**`.
 
 Stage order for `review-to-own`: `review` → `quiz` → `explain` → `change` →
 `own` → `done`. A stage unlocks only when the previous stage_result passed.
@@ -193,8 +203,11 @@ claude -p --input-format stream-json --output-format stream-json --verbose
   [--resume <session_id>] [--json-schema <schema>]
 ```
 
-with cwd = `.data/teammates/<company>/<persona>/` and the API-billing env
-vars removed. Verified 2026-10-19 (Haiku): the persona stays in character
+with cwd = `.data/teammates/<company>/<persona>/`, the API-billing env
+vars removed, and `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` set (without it,
+Haiku personas made broken memory-tool calls on "remember this" prompts;
+persona memory is ours, kept in `persona_memory`). `reply()` also accepts
+`resume=<session_id>`. Verified 2026-10-19 (Haiku): the persona stays in character
 and sees none of the user's personal instructions or memory; each run emits
 `{"type":"rate_limit_event","rate_limit_info":{"unifiedWindows":{"five_hour":{"utilization":0.32,"resetsAt":1792401000},"seven_day":{...}}}}`.
 
