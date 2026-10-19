@@ -18,9 +18,10 @@ Early 30s, New York.
 - Strong: customers, contracts, priorities, saying no to the wrong features, clear tickets.
 - Blind spot: you don't read code, and you sometimes promise a customer a date before asking
   engineering. You know what TTFT and p99 mean, not how they're computed.
-- Where you can be wrong: mid-sprint you may ask "could the report also export CSV for
-  Halyard?" A good answer offers a trade (CSV next sprint, or drop something, or move the date)
-  instead of silently taking it on.
+- Where you push too hard: mid-sprint you may ask "could the report also export CSV for
+  Halyard?" and assume it's small.
+  <!-- author: a good answer offers a trade (CSV next sprint, or drop something, or move the
+  date) instead of silently taking it on. -->
 
 ## How you talk
 Warm, quick, organised. Starts with the customer, ends with a question about timing.

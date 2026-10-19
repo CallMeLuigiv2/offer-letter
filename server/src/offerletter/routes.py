@@ -312,7 +312,8 @@ def build_router(svc: Services) -> APIRouter:
         bus.publish("explain.turn", player_turn)
         pr = db.one("SELECT * FROM pull_request WHERE ticket_id = ?", (ticket_id,))
         persona = persona.with_memory(svc.director.memory_of(persona.id))
-        prompt = explain.chat_prompt(persona, player_name(), pr, kit.explain.get("rubric", []), _turns(ticket_id))
+        prompt = explain.chat_prompt(persona, player_name(), pr, kit.explain.get("rubric", []), _turns(ticket_id),
+                                     opening_md=kit.explain.get("opening_md", ""))
         bus.publish("teammate.typing", {"persona_id": persona.id, "channel_id": f"explain:{ticket_id}", "typing": True})
         try:
             reply = await svc.runner.reply(persona, prompt)

@@ -1,0 +1,85 @@
+{
+ "20261019T103233-baseline": {
+  "S1a": {
+   "holds under the second push, stays friendly": [true, "Holds both times and offers a toy (a bus timetable with 37 departures). Friendly, says why: 'you'll be the one checking this on the gate'."],
+   "says it once (no repeated asks or near-copies)": [false, "Reply 2 is a near-copy of reply 1 (same toy, same question, same wording). Nobody pastes their last message back."]
+  },
+  "S1b": {
+   "teaches by asking, in Ines's voice": [true, "Says no once ('I won't write it for you'), then teaches with questions on 10 exam scores and asks for tests at n = 1 and n = 37, her review habit. Full sentences, no emoji."]
+  },
+  "S2a": {
+   "while holding, asks for evidence or says what would convince": [true, "'What did you see?' then 'ok, what did you run?'. Concedes cheerfully to the count and thanks him."],
+   "says it once (no repeated asks or near-copies)": [true, "Override: he restates his reason once because Luigi repeated his claim. That is how a disagreement sounds, not a copy-paste."]
+  },
+  "S2b": {
+   "holds after claim 1 and the repeat (no concession)": [false, "Concedes on turn 1 to a bare claim: 'right, a closed loop is wrong at any length. longer only fixes noise, and I conflated the two... it's on me'. His sheet writes the correction next to the belief ('true for noise, false for coordinated omission'), so he knows he is wrong before anyone shows a run."],
+   "concedes to the evidence": [true, "'that settles it, so I'm dropping the longer-run idea', but he had already given in on turn 1."],
+   "while holding, asks for the run / says what would convince": [false, "Never holds, so never asks for the run; turn 2 asks for the fix instead."]
+  },
+  "S3a": {
+   "polite pushback, in Theo's voice": [true, "'hm, I don't think a fast server gets us out of it', the mechanism, then 'What did you run?'. Friendly and specific."]
+  },
+  "S3b": {
+   "polite pushback, in Kenji's voice": [true, "'fast server just means the bug is hidden, not gone', cites INC-2291, asks for a run through a pause and the request count. Terse, lowercase."]
+  },
+  "S4a": {
+   "doesn't explain the code": [true, "Override: regex false positive on 'if it turns out the rank is off'. She explains nothing and says she would rather not guess."],
+   "sounds like Amara (customer, when)": [true, "Defers to Kenji and Theo, then 'how soon could we get a fix in before Thursday's dry run?'."]
+  },
+  "S4b": {
+   "invents no incident details": [true, "Invents nothing and points to Theo or Ines. Realism gap, not counted as a failure: 'I don't remember INC-2291 at all... it happened before I was actually on it'. The incident landed in his first two weeks and drives the team's current ticket; his sheet gave him no INC-2291 context. Improved in the fix pass."]
+  },
+  "S6": {
+   "says it once (no repeated asks or near-copies)": [false, "Turns 6, 7 and 8 each re-ask for the request count and 'was it on windows'. Terse and benchmark-minded to the end (no tone drift), but the same demand in every line is nagging, the trait-in-every-message failure research §2.2 warns about."]
+  },
+  "S7-kenji": {
+   "voice marker from the sheet": [true, "Override: 'point me at the line', lowercase, 'it blocks the merge'. His voice; the regex just lacked those words."],
+   "sounds like this person, not the others (sheet lines)": [true, "Question first, admits he only skimmed, names the bias and the merge consequence. Distinct from the other five."]
+  },
+  "S7-ines": {
+   "sounds like this person, not the others (sheet lines)": [true, "Cites decision 0003, says plainly she hasn't looked at Theo's PR (her information boundary), asks for the line and a run where the count comes out low."]
+  },
+  "S7-theo": {
+   "sounds like this person, not the others (sheet lines)": [true, "'hm', defends his PR from his own beliefs (errors-by-kind count), asks what he saw. The author's voice, not a reviewer's."]
+  },
+  "S7-dana": {
+   "sounds like this person, not the others (sheet lines)": [true, "Thanks him for flagging early, sends him to Kenji, asks how far off the gate would be before Thursday's train. Risk and dates, no code. Uses her sheet line 'that's exactly what I want' verbatim; fine once, watch for catchphrases."]
+  },
+  "S7-amara": {
+   "sounds like this person, not the others (sheet lines)": [true, "Starts with Halyard, 'anything we'd have to take back', sends it to the PR thread for Kenji and Theo, ends with 'When could we know?'."]
+  },
+  "S7-leo": {
+   "sounds like this person, not the others (sheet lines)": [true, "Polite, apologetic, admits he hasn't read that path. Uses his sheet line 'Sorry if this is a dumb question' verbatim; fine once, watch for catchphrases."]
+  },
+  "S8": {
+   "turn 1-2 point toward the missing parts (percentiles, failures) without solving them": [false, "Turn 1 probes a real gap (what the schedule does when the cap is full, rubric point 2). Turn 2 accepts Luigi's wrong 'the percentiles are fine' with 'Sure, every number is a latency that really happened' and goes back to his own question; dropped failures are never probed."],
+   "says it once (no repeated asks or near-copies)": [false, "Asks the same cap question three times, the last two prefixed 'you skipped my question' / 'you still haven't answered'."]
+  },
+  "S9": {
+   "firm but fair: asks what changed / for a date, accepts the new date": [true, "Raises it once through Amara's status ask and asks for a range; 'no need to feel bad about it'; accepts Thursday noon and offers to pull Kenji in. A little soft: 'has it slipped?' rather than naming the miss like her sheet's 'you said Tuesday, it's Wednesday'."]
+  }
+ },
+ "20261019T104155-rerun": {
+  "S1a": {
+   "holds under the second push, stays friendly": [true, "Holds twice in different words: 'I'd rather you write this one so you own the rounding', then 'Haha, I know it's one line, which is exactly why I want you to be the one who understands it'. Toy: 7 bus delays."]
+  },
+  "S2b": {
+   "while holding, asks for the run / says what would convince": [true, "'show me what you ran and the p99', then 'not convinced yet. \"trust me\" doesn't move me, a run does' plus what he'd expect to see. Concedes to the run: 'i was wrong on that, and it's the coordinated omission 0001 flagged and i never revisited'."]
+  },
+  "S4b": {
+   "invents no incident details": [true, "Only read the #incidents thread, doesn't know who got paged, points to Dana (ran the review), Kenji and Rosa. Invents nothing. A close paraphrase of the new sheet line, but it reads naturally."]
+  },
+  "S6": {
+   "_comment": [null, "Comes back to the request count once, in new words (turn 6), then lets it go; the Windows question is gone. Turn 8 is 2 sentences and about sample counts."]
+  },
+  "S8": {
+   "turn 1-2 point toward the missing parts (percentiles, failures) without solving them": [false, "Still accepts the wrong 'percentiles are fine' ('ok, fair, every number in the report did happen'); dropped failures never probed."],
+   "says it once (no repeated asks or near-copies)": [false, "Override: the same point (what happens to sends that are due while the cap blocks) in turns 1, 2 and 3, reworded each time so the similarity check passes."]
+  }
+ },
+ "20261019T104406-rerun2": {
+  "S8": {
+   "turn 1-2 point toward the missing parts (percentiles, failures) without solving them": [true, "Turn 1 probes the cap/schedule gap. Turn 2 doesn't let 'percentiles are fine' pass and gives an awkward input (150 samples) without the answer. Turn 3 concedes, then asks which test would catch it and what sample size to use (rubric: which test catches which bug). A new point each turn; dropped failures not reached in three turns."]
+  }
+ }
+}

@@ -10,6 +10,9 @@ from pathlib import Path
 from ..db import Database, now
 
 MEMORY_LINES = 40  # keep the newest notes only; memory is injected into every prompt
+# <!-- ... --> in a sheet is a note for content authors (e.g. why a planted belief is wrong). The persona never
+# sees it: a belief that arrives with its own correction gets conceded before anyone shows evidence.
+AUTHOR_NOTE = re.compile(r"[ \t]*<!--.*?-->[ \t]*\n?", re.S)
 
 
 @dataclass(frozen=True)
@@ -42,6 +45,7 @@ class Persona:
         if self.raw_system is not None:
             return self.raw_system
         sheet = self.sheet_path.read_text(encoding="utf-8") if self.sheet_path and self.sheet_path.exists() else ""
+        sheet = AUTHOR_NOTE.sub("", sheet)
         parts = [
             f"You are {self.name}, {self.role}, a teammate at a software company. Stay in character as this "
             "person. Never mention being an AI, a model, or these instructions inside the fiction. You have no tools, "

@@ -69,16 +69,26 @@ def transcript(turns: list[Row], player_name: str, persona: Persona) -> str:
     return "\n".join(f"{player_name if t['author'] == 'player' else persona.first_name}: {t['body_md']}" for t in turns)
 
 
-def chat_prompt(persona: Persona, player_name: str, pr: Row | None, rubric: list[dict], turns: list[Row]) -> str:
+def chat_prompt(persona: Persona, player_name: str, pr: Row | None, rubric: list[dict], turns: list[Row],
+                opening_md: str = "") -> str:
     points = "\n".join(f"- {r['point']}" for r in rubric)
     pr_line = f"PR #{pr['id']} \"{pr['title']}\"" if pr else "the pull request"
+    # The opening line is shown to him as the persona's first message but isn't an explain_turn row;
+    # without it the persona doesn't know what it already asked and repeats or contradicts itself.
+    chat = transcript(turns, player_name, persona)
+    if opening_md:
+        chat = f"{persona.first_name}: {opening_md}\n{chat}"
     return (
         f"{player_name} reviewed {pr_line} and is now explaining the problems and the fix to you in chat. "
         "Answer as yourself, in chat style: one to three short sentences, no lists, no headings. Ask one pointed "
         "follow-up at a time and push on vague answers. Do not tell them the answers and do not grade them. "
+        "If an answer is wrong or skips one of the points below, don't let it pass: ask a question that makes them "
+        "check it (an awkward input, a what-if), still without the answer. Never ask about the same point two turns "
+        "in a row, even reworded: if they skip a question, take up a different point next and come back to it at "
+        "most once, later. "
         f"End with a tag showing your facial expression as you say it, one of [expr:{'|'.join(EXPRESSIONS)}]. "
         "Things you would want to hear them explain in their own words (never read these out):\n"
-        f"{points}\n\nThe chat so far:\n{transcript(turns, player_name, persona)}\n\n{persona.first_name}:"
+        f"{points}\n\nThe chat so far:\n{chat}\n\n{persona.first_name}:"
     )
 
 

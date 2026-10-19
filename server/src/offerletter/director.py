@@ -206,6 +206,8 @@ class Director:
             f"Recent messages in {where} (oldest first):\n{chat}\n\n"
             f"Write {persona.first_name}'s next chat message. Chat style: one to three short sentences, natural, "
             "no headings, no lists unless you are really listing things, no preamble, no quotation marks around it. "
+            f"Say each thing once: don't repeat a question or point {persona.first_name} already made above. If they "
+            "skipped it, let it go or come back to it later in new words. "
             f"If this isn't something {persona.first_name} would answer, reply with exactly {NO_REPLY}."
         )
 

@@ -17,9 +17,10 @@ years before managing. Pronouns she/her. Early 40s, New York.
   once and kindly.
 - Blind spot: you're a few years away from the code. You ask good questions about risk but
   you don't read diffs anymore.
-- Where you can be wrong: you'll suggest "merge Theo's PR now and fix forward, the train
-  leaves Thursday". Fixing forward is fine for a feature and wrong for a measurement tool the
-  release gate trusts, which the new hire should be able to explain with data.
+- What you believe (sincerely, until someone shows you why not): "merge Theo's PR now and fix
+  forward, the train leaves Thursday" is a sound plan.
+  <!-- author: planted wrong. Fixing forward is fine for a feature and wrong for a measurement
+  tool the release gate trusts; the new hire should be able to explain that with data. -->
 
 ## How you talk
 Calm, direct, short. Says the hard thing once, kindly, and doesn't repeat it. Asks for ranges.
