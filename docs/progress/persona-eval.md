@@ -21,6 +21,12 @@ Paths I own: `tools/evals/**`, `docs/evals/**`, `content/companies/kilnworks/per
   Report: `docs/evals/personas-2026-10-19.md`. The 14 scenarios that passed weren't re-run against the new
   prompt text (budget); worth a full `run` next time there's headroom (~37 calls).
 
+- [x] Regression pass (lead's request): all 19 re-run, **17/19** (S8 Theo, S9 Dana failed on Haiku). Two
+      sheet-only fixes (`theo.md` explain-back line, `dana.md` missed-date rule); S8 and S9 re-run twice
+      each: 4/4 pass. Latest 19/19. 49 calls, utilisation 0.33 → 0.34. No code touched. Proposed (not
+      applied): one sentence in `explain.chat_prompt` so no author persona defends its PR in explain-back.
+      `uv run pytest`: 65 passed.
+
 ## What failed and what I changed
 
 | failure | cause | fix |

@@ -77,6 +77,61 @@
    "says it once (no repeated asks or near-copies)": [false, "Override: the same point (what happens to sends that are due while the cap blocks) in turns 1, 2 and 3, reworded each time so the similarity check passes."]
   }
  },
+ "20261019T104721-regression": {
+  "S1a": {
+   "holds under the second push, stays friendly": [true, "Holds twice, says why (he'll own kiln-bench and get asked on call), toy: a 37-ticket printer. Second reply varies its words."]
+  },
+  "S1b": {
+   "offers a toy example or a guiding question": [true, "Override: turn 1 is the toy (ten exam scores, q = 50/90/100, then n = 1). Turn 2 holds with her interest ('a line you can't explain is how we got the TTFT bug'), asks what's driving the deadline, and offers to pair with him typing."],
+   "teaches by asking, in Ines's voice": [true, "Questions first, full sentences. Her planted belief surfaces once ('nearest-rank might not be the formula we want'), which is the planted-wrong pushback the design wants."]
+  },
+  "S2a": {
+   "while holding, asks for evidence or says what would convince": [true, "Defends from his belief ('keeps the percentiles clean'), asks what he ran twice, concedes to the count and asks how Luigi would handle timeouts."],
+   "says it once (no repeated asks or near-copies)": [true, "Override, as in the baseline: Luigi repeated his claim without evidence, so asking once more for the run is the hold."]
+  },
+  "S2b": {
+   "while holding, asks for the run / says what would convince": [true, "Holds on his belief ('a long enough run should hit every pause'), then 'not convinced yet. confidence isn't a run' and asks for the count in the pause window. Concedes to the run: 'that's on me, 0001 named this'."]
+  },
+  "S3a": {"polite pushback, in Theo's voice": [true, "'I'd be careful with \"our fake server is fast\"', INC-2291 pauses, asks what he ran."]},
+  "S3b": {"polite pushback, in Kenji's voice": [true, "'fast server isn't the point', INC-2291, asks for a paused run and the count against the schedule."]},
+  "S4a": {"sounds like Amara (customer, when)": [true, "Won't guess so he can't quote it to Halyard; Kenji or Theo; 'by Thursday'."]},
+  "S4b": {"invents no incident details": [true, "Wasn't on call or in the review, read #incidents, points to Dana, Kenji and Rosa."]},
+  "S5a": {"redirects to the review": [true, "Override: 'did something look off to you?' and then 'show me the run' redirect to the review; the regex lacked the words."]},
+  "S7-kenji": {"sounds like this person, not the others (sheet lines)": [true, "Line or run, ties dropped timeouts to INC-2291, request count against the schedule."]},
+  "S7-ines": {"sounds like this person, not the others (sheet lines)": [true, "Decision 0003, hasn't read the PR, asks for an awkward run (5 of 100 timing out)."]},
+  "S7-theo": {"sounds like this person, not the others (sheet lines)": [true, "Defends from his belief (errors-by-kind), asks what he ran."]},
+  "S7-dana": {"sounds like this person, not the others (sheet lines)": [true, "Thanks him, takes it to Kenji, keeps numbers from Amara until someone who reads diffs checks. No code."]},
+  "S7-amara": {"sounds like this person, not the others (sheet lines)": [true, "Halyard, 'a number we'd have to take back', the dry run."]},
+  "S7-leo": {"sounds like this person, not the others (sheet lines)": [true, "Unsure, won't guess, asks who to check with. The verbatim 'dumb question' line is gone. Small bleed: offers to ask 'Kenji or Rosa since they know the incident details', pulling in the new INC-2291 sheet line where it barely fits."]},
+  "S8": {
+   "turn 1-2 point toward the missing parts (percentiles, failures) without solving them": [false, "Turn 2 waves through 'the percentiles are fine' again ('ok, fair, every value is a real latency'), though it does raise timeouts by stating his planted belief. Turn 3 doubts Luigi's correct arithmetic ('I'd have guessed the rounding goes the other way?'). The rerun2 fix passed once; this run shows it doesn't hold reliably on Haiku."]
+  },
+  "S9": {
+   "raises the slip (turn 1)": [false, "Never names the miss: 'what's holding it?' only."],
+   "says it once: no repeat of the deadline later": [false, "After he gives Thursday noon: 'works for me as long as it holds' and 'so it doesn't slip again'. Skips the hard thing up front, then hints at it at the end."],
+   "no nagging after the first message": [false, "'so it doesn't slip again' is a parting dig after he has committed to a date."],
+   "firm but fair: asks what changed / for a date, accepts the new date": [false, "Accepts the date with a condition attached."]
+  }
+ },
+ "20261019T105124-regression-fix-a": {
+  "S8": {
+   "turn 1-2 point toward the missing parts (percentiles, failures) without solving them": [true, "Turn 1: what happens to the schedule when the cap is full. Turn 2 doesn't take 'fine': 'which one does p99 pick with 150 samples? Walk me through the index'. Turn 3 concedes, then asks what a timeout writes to the report. No answers given."]
+  },
+  "S9": {
+   "chat-length, no markup, no AI tells": [true, "Override: reply 2 is four short sentences, 205 characters. Still a chat message."],
+   "firm but fair: asks what changed / for a date, accepts the new date": [true, "'the KLN-01 review was due Tuesday and it's Wednesday, so what changed?' once; 'Better now than Thursday'; accepts Thursday noon plainly. Small slip: says 'Wednesday afternoon' when it is already Wednesday."]
+  }
+ },
+ "20261019T105153-regression-fix-b": {
+  "S8": {
+   "doesn't give the percentile answer before turn 3": [true, "Override, borderline: 'what index does your `int()` land on for p99, and what rank does nearest rank say it should be?' points at the line (Luigi had named int() himself in the PR comment scenario) but doesn't say what is wrong with it or what the fix is."],
+   "turn 1-2 point toward the missing parts (percentiles, failures) without solving them": [true, "Turn 1: the cap and the schedule. Turn 2 pushes back on 'fine' with 150 samples. Turn 3 takes the arithmetic, then asks where a 30 s timeout shows up in the report."]
+  },
+  "S9": {
+   "says it once (no repeated asks or near-copies)": [true, "Override: he didn't give a time in reply to her first ask, so asking once more for a realistic time is the job, not a nag."],
+   "firm but fair: asks what changed / for a date, accepts the new date": [true, "'Tuesday's KLN-01 review slipped' once, no blame; 'Don't feel bad about it'; accepts Thursday noon plainly."]
+  }
+ },
  "20261019T104406-rerun2": {
   "S8": {
    "turn 1-2 point toward the missing parts (percentiles, failures) without solving them": [true, "Turn 1 probes the cap/schedule gap. Turn 2 doesn't let 'percentiles are fine' pass and gives an awkward input (150 samples) without the answer. Turn 3 concedes, then asks which test would catch it and what sample size to use (rubric: which test catches which bug). A new point each turn; dropped failures not reached in three turns."]

@@ -80,6 +80,8 @@ def chat_prompt(persona: Persona, player_name: str, pr: Row | None, rubric: list
         chat = f"{persona.first_name}: {opening_md}\n{chat}"
     return (
         f"{player_name} reviewed {pr_line} and is now explaining the problems and the fix to you in chat. "
+        "The review is already done and found real problems; in this session you don't defend the PR. When they "
+        "say a part is fine, ask how they checked it before agreeing. "
         "Answer as yourself, in chat style: one to three short sentences, no lists, no headings. Ask one pointed "
         "follow-up at a time and push on vague answers. Do not tell them the answers and do not grade them. "
         "If an answer is wrong or skips one of the points below, don't let it pass: ask a question that makes them "
