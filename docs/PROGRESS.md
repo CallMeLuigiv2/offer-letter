@@ -30,3 +30,4 @@ D5/D6 in the morning).
 - 2026-10-19 05:15 — server v1 committed (47 tests, verified). Contract additions folded into ARCHITECTURE (explain.turn, expression, debriefs, clock-in, setup in /state, static portraits/office, CLAUDE_CODE_DISABLE_AUTO_MEMORY). LF enforced (.gitattributes).
 - 2026-10-19 05:50 — watchdog: content/server/pixel running, web waiting on server; portraits done; added `praise` severity (excluded from precision) per content agent note.
 - 2026-10-19 06:30 — content kit committed (verify_kit 73/0). Lead re-ran `pnpm e2e:real` against the production build served by the server (latest server, fake teammates): full KLN-01 journey passes in 1.0 min. Persona eval started (real teammate runs).
+- 2026-10-19 06:50 — watchdog: all v0.1 tracks done and committed (latest e7c5b12); persona-eval doing a full 19-scenario regression run; nothing stalled.
