@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Office preview</title>
+    <style>
+      html, body, #root { margin: 0; height: 100%; background: #1b1726; color: #f7f5ef; font: 13px system-ui, sans-serif; }
+      .bar { position: fixed; top: 8px; left: 8px; z-index: 10; display: flex; gap: 6px; flex-wrap: wrap; }
+      .bar button { background: #2a2638; color: #f7f5ef; border: 1px solid #56587a; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
+      .bar button[aria-pressed="true"] { background: #3456a8; border-color: #4f8ee0; }
+      .bar input { width: 160px; }
+      .log { position: fixed; bottom: 8px; left: 8px; z-index: 10; background: #2a2638cc; padding: 4px 8px; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
