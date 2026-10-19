@@ -20,6 +20,7 @@ export const SEVERITIES: { id: Severity; label: string; hint: string }[] = [
   { id: 'major', label: 'Major', hint: 'A real problem, likely to bite.' },
   { id: 'minor', label: 'Minor', hint: 'Worth fixing, not urgent.' },
   { id: 'nit', label: 'Nit', hint: 'Style or taste.' },
+  { id: 'praise', label: 'Praise', hint: 'Something done well.' },
 ];
 
 export function SeverityTag({ s }: { s: Severity | null }) {
@@ -78,6 +79,7 @@ export function CommentComposer({
           ))}
         </div>
       )}
+      {!reply && <p className="muted small sev-note">Praise and nits never count against you.</p>}
       <textarea autoFocus rows={3} value={body} onChange={(e) => setBody(e.target.value)} placeholder={reply ? 'Reply…' : 'What is wrong here, and why does it matter?'} aria-label="Comment" />
       <div className="row">
         <button className="btn small" onClick={onCancel}>Cancel</button>

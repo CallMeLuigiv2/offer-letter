@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { api, subscribe } from '../api';
 import type { NewComment, ReviewComment, ReviewResult, Verdict } from '../api';
 import { commentLink, countByPath, scoreSummary, type Side } from '../lib/diff';
-import { saveDebrief } from '../lib/debriefs';
 import { stageRoute, stageState } from '../lib/stages';
 import { useStore } from '../store';
 import { errText, useAsync } from '../ui/hooks';
@@ -228,7 +227,6 @@ function ReviewInner() {
     if (!prId) return;
     try {
       const r = await api.submitReview(prId, { verdict, body_md: body });
-      saveDebrief(detail.id, { stage: 'review', body_md: r.debrief_md, passed: r.passed });
       setResult(r);
       setModal(false);
     } catch (e) {

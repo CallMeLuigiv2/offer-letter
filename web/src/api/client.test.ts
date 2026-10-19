@@ -51,6 +51,16 @@ describe('real API client matches ARCHITECTURE §4', () => {
     expect(JSON.parse(calls[3][1].body as string)).toEqual({ confirm: true, visibility: 'private' });
   });
 
+  it('calls clock-in and debriefs', async () => {
+    const f = mockFetch(200, {});
+    await realApi.clockIn(60);
+    await realApi.debriefs('KLN-01');
+    const calls = f.mock.calls as unknown as [string, RequestInit][];
+    expect(calls[0][0]).toBe('/api/clock-in');
+    expect(JSON.parse(calls[0][1].body as string)).toEqual({ minutes: 60 });
+    expect(calls[1][0]).toBe('/api/tickets/KLN-01/debriefs');
+  });
+
   it('turns {error} bodies into ApiError with the sentence', async () => {
     mockFetch(409, { error: 'Finish the quiz first.' });
     await expect(realApi.startTicket('KLN-01')).rejects.toMatchObject({ message: 'Finish the quiz first.', status: 409 });

@@ -11,7 +11,7 @@ export function Badge() {
   const employment = useStore((s) => s.employment);
   const company = useStore((s) => s.company);
   if (!player || !employment) return <Navigate to="/careers" replace />;
-  const num = employment.id.replace(/\D/g, '').padStart(4, '0');
+  const num = employment.id.replace(/\D/g, '').slice(-4).padStart(4, '0');
 
   return (
     <Frame step={4}>

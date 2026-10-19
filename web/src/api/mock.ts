@@ -11,6 +11,7 @@ import type {
   CatalogCompany,
   Channel,
   Company,
+  Debrief,
   Employment,
   ExplainTurn,
   Governor,
@@ -46,6 +47,14 @@ const comments: ReviewComment[] = [];
 const stageResults: StageResult[] = [];
 let explainTurns: ExplainTurn[] = [];
 let setupChecks = 0;
+let setupPayload: AppState['setup'] = null;
+const debriefList: Debrief[] = [];
+function saveDebrief(stage: Stage, body_md: string) {
+  const i = debriefList.findIndex((d) => d.stage === stage);
+  const row = { stage, body_md, created_at: now() };
+  if (i >= 0) debriefList[i] = row;
+  else debriefList.push(row);
+}
 
 const PR: PullRequest = {
   id: 1,
@@ -156,7 +165,8 @@ function issueLine(issue: (typeof ISSUES)[number]): number {
 }
 
 function scoreReview(): ReviewScore {
-  const mine = comments.filter((x) => x.author === 'player' && !x.parent_id);
+  // Praise and nits never count against precision.
+  const mine = comments.filter((x) => x.author === 'player' && !x.parent_id && x.severity !== 'praise' && x.severity !== 'nit');
   const claimed = new Set<string>();
   const found: ReviewScore['found'] = [];
   for (const issue of ISSUES) {
@@ -207,6 +217,7 @@ export const mockApi: Api = {
       channels,
       tickets,
       governor: employment ? governor : null,
+      setup: setupPayload,
     };
   },
 
@@ -239,18 +250,15 @@ export const mockApi: Api = {
     const first = player.name.split(' ')[0];
     say('kilnworks.general', 'kilnworks.dana', `Welcome to the Serving team, ${first}. I'm Dana, your manager. Kenji is tech lead, Ines is our GPU person, Theo and Amara you'll meet today.\n\nYour first ticket is **KLN-01**. Start from the Tickets page.`, 900);
     say('kilnworks.dm.theo', 'kilnworks.theo', `hey ${first}! welcome. my PR for the load generator is up (KLN-01). could you review it? I need it for Friday's capacity review :)`, 1800);
-    return {
-      employment,
-      channels,
-      setup: {
+    setupPayload = {
         title: 'Set up your laptop',
         steps: [
           { id: 'clone', label: 'Your clone of kiln-bench exists', path: 'C:\\Users\\Owner\\OfferLetter\\work\\kilnworks\\kiln-bench' },
           { id: 'deps', label: 'Install dependencies', command: 'uv sync' },
           { id: 'tests', label: 'Run the tests and see them pass', command: 'uv run pytest' },
         ],
-      },
     };
+    return { employment, channels, setup: setupPayload };
   },
 
   async setupCheck() {
@@ -385,6 +393,7 @@ export const mockApi: Api = {
       `Read the rate first: does the generator hold the target rate when the server slows down? Then check every place a number is thrown away (errors, warmup) before trusting a percentile.`,
       body.verdict === 'approve' ? `\nYou approved the PR. With a blocker in it, that would have shipped a misleading p99.` : '',
     ].join('\n\n');
+    saveDebrief('review', debrief_md);
     addResult('KLN-01', 'review', passed, { recall: score.recall, precision: score.precision, verdict: body.verdict });
     if (passed) {
       advance('KLN-01', 'review');
@@ -409,6 +418,7 @@ export const mockApi: Api = {
     }));
     const score = results.filter((r) => r.correct).length / QUIZ.length;
     const passed = score >= 0.8;
+    saveDebrief('quiz', `## Quiz debrief\n\nYou scored **${Math.round(score * 100)}%**.\n\n` + results.map((x, i) => `${i + 1}. ${x.correct ? 'Correct.' : 'Not quite.'} ${x.explanation_md}`).join('\n'));
     addResult(id, 'quiz', passed, { score });
     if (passed) advance(id, 'quiz');
     return { score, results, passed };
@@ -439,7 +449,7 @@ export const mockApi: Api = {
     const [expression, text] = replies[Math.min(n - 1, replies.length - 1)];
     const turn: ExplainTurn = { id: nid('et'), ticket_id: id, author: 'kilnworks.ines', body_md: text, created_at: now(), expression };
     explainTurns.push(turn);
-    return { turn };
+    return { turn, player_turn: mine };
   },
 
   async explainFinish(id) {
@@ -453,6 +463,10 @@ export const mockApi: Api = {
       { point: 'The percentile index is wrong for small samples', covered: has('index', 'percentile', 'max'), note: '' },
     ].map((r) => ({ ...r, note: r.covered ? 'Covered.' : 'You did not say this. Try once more with your own words.' }));
     const passed = rubric.every((r) => r.covered);
+    const dm = passed
+      ? '## Explain debrief\n\nYou explained the mechanism, not just the symptom. That is what lets you change this code safely.'
+      : '## Explain debrief\n\nSome points were missing. You can keep talking to Ines and finish again.';
+    saveDebrief('explain', dm);
     addResult(id, 'explain', passed, { rubric });
     if (passed) advance(id, 'explain');
     return {
@@ -491,6 +505,8 @@ export const mockApi: Api = {
           { name: 'test_stats_still_summarize', passed: true, output: '' },
         ];
     const passed = tests.every((t) => t.passed);
+    const cdm = passed ? '## Change debrief\n\nAll hidden tests pass on your branch.' : '## Change debrief\n\nOne test fails on your branch. Read its output, fix it, push, and check again.';
+    saveDebrief('change', cdm);
     addResult(id, 'change', passed, { branch });
     if (passed) advance(id, 'change');
     return {
@@ -506,6 +522,19 @@ export const mockApi: Api = {
     addResult(id, 'own', true, {});
     advance(id, 'own');
     return { repo_url: 'https://github.com/luigi/kiln-bench' };
+  },
+
+  async debriefs() {
+    await wait(40);
+    return [...debriefList];
+  },
+
+  async clockIn(minutes) {
+    await wait(150);
+    if (!employment) throw new ApiError('Join a company before you clock in.', 409);
+    const first = (player?.name ?? 'there').split(' ')[0];
+    say('kilnworks.serving', 'kilnworks.kenji', `Morning ${first}. Standup: what are you working on today, and is anything blocking you? You have ${minutes} minutes blocked out, so say what you want done by the end of it.`, 900);
+    return { standup_channel_id: 'kilnworks.serving' };
   },
 
   async governor() {

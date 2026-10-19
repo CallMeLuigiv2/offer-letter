@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Avatar, Persona } from '../api';
 import { initials, portraitUrl } from '../lib/util';
 
-// Remember which portraits do not exist so we do not request them again.
-const missing = new Set<string>();
+import { missingPortraits as missing } from './Portrait';
 
 export const HAIR_STYLES = ['Short', 'Long', 'Bun', 'Buzz', 'Curly'];
 export const HAIR_COLORS = ['#2b1d14', '#4a3426', '#8a5a2b', '#d9a441', '#c8553d', '#8b8fa3', '#cba6f7'];
@@ -33,7 +32,7 @@ export function PersonaAvatar({
         alt=""
         width={size}
         height={size}
-        style={{ width: size, height: size, borderRadius: radius, objectFit: 'cover', objectPosition: 'top' }}
+        style={{ width: size, height: size, borderRadius: radius, objectFit: 'cover', objectPosition: '50% 12%' }}
         onError={() => {
           missing.add(url);
           setOk(false);

@@ -7,11 +7,12 @@ import { useStore } from '../store';
 import { PersonaAvatar, PlayerAvatar } from '../ui/Avatars';
 import { errText } from '../ui/hooks';
 import { Markdown } from '../ui/Markdown';
+import { PersonaCard } from '../ui/PersonaCard';
 
 const EMPTY: Message[] = [];
 const EMPTY_IDS: string[] = [];
 
-function MessageRow({ m, prev, personas }: { m: Message; prev?: Message; personas: Persona[] }) {
+function MessageRow({ m, prev, personas, onName }: { m: Message; prev?: Message; personas: Persona[]; onName: (p: Persona) => void }) {
   const player = useStore((s) => s.player);
   const isMe = m.author === 'player';
   const p = personas.find((x) => x.id === m.author);
@@ -43,7 +44,11 @@ function MessageRow({ m, prev, personas }: { m: Message; prev?: Message; persona
         <div className="msg-main">
           {(!sameBlock || newDay) && (
             <div className="msg-head">
-              <b style={{ color }}>{name}</b>
+              {p ? (
+                <button className="name-btn" style={{ color }} onClick={() => onName(p)}>{name}</button>
+              ) : (
+                <b style={{ color }}>{name}</b>
+              )}
               {p && <span className="muted small">{p.role}</span>}
               <time className="muted small">{timeLabel(m.created_at)}</time>
             </div>
@@ -149,6 +154,7 @@ export function ChannelView() {
   const typingIds = useStore((s) => s.typing[id]) ?? EMPTY_IDS;
   const openChannel = useStore((s) => s.openChannel);
   const [error, setError] = useState<string | null>(null);
+  const [card, setCard] = useState<Persona | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const channel = channels.find((c) => c.id === id);
   const partner = channel ? dmPartner(channel, personas) : undefined;
@@ -176,7 +182,7 @@ export function ChannelView() {
       <div className="messages" data-testid="messages">
         {error && <p className="error">{error}</p>}
         {list.map((m, i) => (
-          <MessageRow key={m.id} m={m} prev={list[i - 1]} personas={personas} />
+          <MessageRow key={m.id} m={m} prev={list[i - 1]} personas={personas} onName={setCard} />
         ))}
         <div className="typing" aria-live="polite" data-testid="typing">
           {typers.length > 0 && (
@@ -189,6 +195,7 @@ export function ChannelView() {
         <div ref={endRef} />
       </div>
       <Composer channelId={id} placeholder={channel.kind === 'dm' ? `Message ${partner?.name ?? ''}` : `Message #${channel.name}. Type @ to mention someone`} />
+      {card && <PersonaCard persona={card} onClose={() => setCard(null)} />}
     </section>
   );
 }

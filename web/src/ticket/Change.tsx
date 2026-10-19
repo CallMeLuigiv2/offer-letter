@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import type { ChangeResult } from '../api';
-import { saveDebrief } from '../lib/debriefs';
 import { stageRoute } from '../lib/stages';
+import { findPersona, personaRef } from '../lib/util';
 import { useStore } from '../store';
 import { errText, useAsync } from '../ui/hooks';
 import { CmdLine } from '../ui/Copy';
@@ -25,6 +25,8 @@ function ChangeInner() {
   const setup = useStore((s) => s.setup);
   const toast = useStore((s) => s.toast);
   const { data, error } = useAsync(() => api.change(detail.id), [detail.id]);
+  const { data: prData } = useAsync(() => (detail.pr_id ? api.pr(detail.pr_id) : Promise.resolve(null)), [detail.pr_id]);
+  const head = prData?.pr.head;
   const [branch, setBranch] = useState<string | null>(null);
   const [result, setResult] = useState<ChangeResult | null>(null);
   const [busy, setBusy] = useState(false);
@@ -32,7 +34,7 @@ function ChangeInner() {
   if (error) return <div className="pane-pad"><p className="error">{error}</p></div>;
   if (!data) return <div className="pane-pad muted">Loading the request…</div>;
 
-  const from = personas.find((p) => p.id === data.from_persona);
+  const from = findPersona(personas, data.from_persona);
   const b = branch ?? data.branch_hint;
   const clone = setup.steps.find((s) => s.id === 'clone')?.path ?? setup.steps.find((s) => s.path)?.path ?? 'your clone of the repo (see Laptop setup)';
 
@@ -41,7 +43,6 @@ function ChangeInner() {
     try {
       const r = await api.changeCheck(detail.id, b.trim());
       setResult(r);
-      saveDebrief(detail.id, { stage: 'change', body_md: r.debrief_md, passed: r.passed });
     } catch (e) {
       toast('warn', errText(e));
     } finally {
@@ -55,7 +56,7 @@ function ChangeInner() {
         <header className="request-from">
           {from && <PersonaAvatar persona={from} size={40} />}
           <div>
-            <b style={{ color: from?.color }}>{from?.name ?? data.from_persona}</b>
+            <b style={{ color: from?.color }}>{from?.name ?? personaRef(data.from_persona)}</b>
             <span className="muted small"> {from?.role}</span>
           </div>
         </header>
@@ -70,8 +71,9 @@ function ChangeInner() {
             <CmdLine text={clone} />
           </li>
           <li>
-            Create the branch:
-            <CmdLine text={`git switch -c ${b}`} />
+            {head ? 'Start your branch from the pull request branch:' : 'Create the branch:'}
+            {head && <CmdLine text="git fetch origin" />}
+            <CmdLine text={head ? `git switch -c ${b} origin/${head}` : `git switch -c ${b}`} />
           </li>
           <li>Make the change and add a test. Run the tests until they pass.</li>
           <li>

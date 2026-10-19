@@ -1,6 +1,6 @@
 // Types for the HTTP API (docs/ARCHITECTURE.md §2–§4) and websocket events (§3).
 
-export type Severity = 'blocker' | 'major' | 'minor' | 'nit';
+export type Severity = 'blocker' | 'major' | 'minor' | 'nit' | 'praise';
 export type Verdict = 'approve' | 'request_changes' | 'comment';
 export type Stage = 'review' | 'quiz' | 'explain' | 'change' | 'own';
 export type TicketStage = Stage | 'done';
@@ -133,6 +133,7 @@ export interface AppState {
   channels: Channel[];
   tickets: Ticket[];
   governor: Governor | null;
+  setup?: Setup | SetupStep[] | null;
 }
 
 export interface SetupStep {
@@ -244,10 +245,16 @@ export interface ExplainTurn {
   expression?: string;
 }
 export interface ExplainState {
-  persona: string; // persona id
+  persona: string | { id: string; name?: string; role?: string; color?: string }; // id, or the persona object
   opening_md: string;
   turns: ExplainTurn[];
 }
+export interface Debrief {
+  stage: Stage;
+  body_md: string;
+  created_at: string;
+}
+
 export interface ExplainFinish {
   passed: boolean;
   rubric: { point: string; covered: boolean; note: string }[];
@@ -256,7 +263,7 @@ export interface ExplainFinish {
 
 export interface ChangeRequest {
   request_md: string;
-  from_persona: string;
+  from_persona: string | { id: string }; // id, bare slug, or object
   branch_hint: string;
 }
 export interface ChangeResult {
@@ -278,6 +285,7 @@ export type ServerEvent =
   | { type: 'pr.updated'; data: PullRequest }
   | { type: 'review.comment.created'; data: ReviewComment }
   | { type: 'stage.result'; data: StageResult }
+  | { type: 'explain.turn'; data: ExplainTurn }
   | { type: 'governor.updated'; data: Governor }
   | { type: 'notice'; data: { level: 'info' | 'warn'; text: string } };
 
@@ -302,10 +310,12 @@ export interface Api {
   quiz(ticketId: string): Promise<{ questions: QuizQuestion[] }>;
   submitQuiz(ticketId: string, answers: Record<string, string>): Promise<QuizResult>;
   explain(ticketId: string): Promise<ExplainState>;
-  explainSend(ticketId: string, body_md: string): Promise<{ turn: ExplainTurn }>;
+  explainSend(ticketId: string, body_md: string): Promise<{ turn: ExplainTurn; player_turn?: ExplainTurn }>;
   explainFinish(ticketId: string): Promise<ExplainFinish>;
   change(ticketId: string): Promise<ChangeRequest>;
   changeCheck(ticketId: string, branch: string): Promise<ChangeResult>;
   own(ticketId: string): Promise<{ repo_url: string }>;
   governor(): Promise<Governor>;
+  debriefs(ticketId: string): Promise<Debrief[]>;
+  clockIn(minutes: number): Promise<{ standup_channel_id: string }>;
 }

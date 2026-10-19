@@ -2,49 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import type { ExplainFinish, ExplainTurn } from '../api';
-import { saveDebrief } from '../lib/debriefs';
 import { teammatesAvailable } from '../lib/governor';
 import { stageRoute } from '../lib/stages';
-import { portraitUrl, sleep } from '../lib/util';
+import { findPersona, personaRef, sleep } from '../lib/util';
 import { useStore } from '../store';
 import { errText, useAsync, useReducedMotion } from '../ui/hooks';
 import { Markdown } from '../ui/Markdown';
+import { Portrait } from '../ui/Portrait';
 import { StageGate, useTicketCtx } from './TicketLayout';
 
-/** Portrait for the visual-novel panel: the image if it exists, else a tidy bust. */
-function Portrait({ personaId, color, expression }: { personaId: string; color: string; expression: string }) {
-  const [src, setSrc] = useState(portraitUrl(personaId, expression));
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    setSrc(portraitUrl(personaId, expression));
-    setFailed(false);
-  }, [personaId, expression]);
-  if (failed) {
-    return (
-      <svg className="bust" viewBox="0 0 200 240" role="img" aria-label="Portrait placeholder">
-        <rect width="200" height="240" fill="var(--surface)" />
-        <path d="M20 240c0-52 36-84 80-84s80 32 80 84z" fill={color} opacity="0.85" />
-        <rect x="88" y="124" width="24" height="34" fill="var(--text-soft)" opacity="0.5" />
-        <ellipse cx="100" cy="92" rx="38" ry="44" fill="var(--text-soft)" opacity="0.55" />
-        <path d="M60 86c4-34 28-48 52-44 22 4 32 24 28 44-10-18-26-24-44-22-16 2-30 10-36 22z" fill={color} />
-      </svg>
-    );
-  }
-  return (
-    <img
-      className="portrait"
-      src={src}
-      alt=""
-      onError={() => {
-        if (!src.endsWith('/neutral.png')) setSrc(portraitUrl(personaId, 'neutral'));
-        else setFailed(true);
-      }}
-    />
-  );
-}
-
 /** Types text out; click to skip. Instant under reduced motion. */
-function Typed({ text, animate, onDone }: { text: string; animate: boolean; onDone?: () => void }) {
+function Typed({ text, animate, onStart, onDone }: { text: string; animate: boolean; onStart?: () => void; onDone?: () => void }) {
   const reduced = useReducedMotion();
   const [n, setN] = useState(animate && !reduced ? 0 : text.length);
   useEffect(() => {
@@ -53,6 +21,7 @@ function Typed({ text, animate, onDone }: { text: string; animate: boolean; onDo
       return;
     }
     setN(0);
+    onStart?.();
     let i = 0;
     const id = setInterval(() => {
       i += 3;
@@ -62,7 +31,10 @@ function Typed({ text, animate, onDone }: { text: string; animate: boolean; onDo
         onDone?.();
       }
     }, 16);
-    return () => clearInterval(id);
+    return () => {
+      clearInterval(id);
+      onDone?.();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, animate, reduced]);
   const shown = text.slice(0, n);
@@ -94,6 +66,7 @@ function ExplainInner() {
   const [finish, setFinish] = useState<ExplainFinish | null>(null);
   const [finishing, setFinishing] = useState(false);
   const [fresh, setFresh] = useState<string | null>('opening');
+  const [talking, setTalking] = useState(false);
   const logEnd = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -106,8 +79,9 @@ function ExplainInner() {
   if (error) return <div className="pane-pad"><p className="error">{error}</p></div>;
   if (!data) return <div className="pane-pad muted">Loading…</div>;
 
-  const persona = personas.find((p) => p.id === data.persona);
-  const name = persona?.name ?? data.persona;
+  const personaId = personaRef(data.persona);
+  const persona = findPersona(personas, data.persona);
+  const name = persona?.name ?? (typeof data.persona === 'object' ? data.persona.name : undefined) ?? personaId;
   const lastTeammate = [...turns].reverse().find((t) => t.author !== 'player');
   const expression = lastTeammate?.expression ?? 'neutral';
   const available = teammatesAvailable(governor);
@@ -149,7 +123,6 @@ function ExplainInner() {
     try {
       const r = await api.explainFinish(detail.id);
       setFinish(r);
-      saveDebrief(detail.id, { stage: 'explain', body_md: r.debrief_md, passed: r.passed });
     } catch (e) {
       toast('warn', errText(e));
     } finally {
@@ -161,7 +134,7 @@ function ExplainInner() {
     <div className="vn" data-testid="explain">
       <aside className="vn-left">
         <div className="vn-frame">
-          <Portrait personaId={data.persona} color={persona?.color ?? '#cba6f7'} expression={expression} />
+          <Portrait personaId={persona?.id ?? personaId} color={persona?.color ?? '#cba6f7'} expression={expression} talking={talking} />
         </div>
         <b className="vn-name" style={{ color: persona?.color }}>{name}</b>
         <span className="muted small">{persona?.role}</span>
@@ -170,12 +143,12 @@ function ExplainInner() {
       <section className="vn-right">
         <div className="vn-log" aria-live="polite">
           <div className="line them">
-            <Typed text={data.opening_md} animate={fresh === 'opening' && turns.length === 0} />
+            <Typed text={data.opening_md} animate={fresh === 'opening' && turns.length === 0} onStart={() => setTalking(true)} onDone={() => setTalking(false)} />
           </div>
           {turns.map((t) => (
             <div key={t.id} className={`line ${t.author === 'player' ? 'me' : 'them'}`}>
               <span className="who">{t.author === 'player' ? player?.name ?? 'You' : name}</span>
-              {t.author === 'player' ? <Markdown>{t.body_md}</Markdown> : <Typed text={t.body_md} animate={fresh === t.id} />}
+              {t.author === 'player' ? <Markdown>{t.body_md}</Markdown> : <Typed text={t.body_md} animate={fresh === t.id} onStart={() => setTalking(true)} onDone={() => setTalking(false)} />}
             </div>
           ))}
           {waiting && (

@@ -44,7 +44,9 @@ describe('mock server follows the stage rules', () => {
     await mockApi.addComment(1, { path: 'kiln_bench/loadgen.py', line: find('kiln_bench/loadgen.py', 'results.append(await'), side: 'new', body_md: 'closed loop', severity: 'blocker' });
     await mockApi.addComment(1, { path: 'kiln_bench/stats.py', line: find('kiln_bench/stats.py', 'idx = int('), side: 'new', body_md: 'index', severity: 'major' });
     await mockApi.addComment(1, { path: 'kiln_bench/loadgen.py', line: find('kiln_bench/loadgen.py', 'return None'), side: 'new', body_md: 'drops errors', severity: 'major' });
-    await mockApi.addComment(1, { path: 'tests/test_stats.py', line: 4, side: 'new', body_md: 'unrelated', severity: 'nit' });
+    await mockApi.addComment(1, { path: 'tests/test_stats.py', line: 4, side: 'new', body_md: 'unrelated', severity: 'minor' });
+    await mockApi.addComment(1, { path: 'tests/test_stats.py', line: 5, side: 'new', body_md: 'nice small test', severity: 'praise' });
+    await mockApi.addComment(1, { path: 'tests/test_stats.py', line: 1, side: 'new', body_md: 'naming', severity: 'nit' });
     const r = await mockApi.submitReview(1, { verdict: 'request_changes', body_md: 'see comments' });
     expect(r.score.found.map((f) => f.issue_id).sort()).toEqual(['closed-loop', 'dropped-failures', 'percentile-index']);
     expect(r.score.false_flags).toHaveLength(1);

@@ -43,6 +43,7 @@ interface Store {
   activeChannel: string | null;
   toasts: Toast[];
   setup: Setup;
+  clock: Clock | null;
   draft: Draft;
   theme: 'dark' | 'light';
 
@@ -51,7 +52,7 @@ interface Store {
   openChannel(id: string): Promise<void>;
   send(channelId: string, body: string): Promise<void>;
   setDraft(patch: Partial<Draft>): void;
-  setSetup(s: Setup): void;
+  clockIn(minutes: number): Promise<string>;
   setTheme(t: 'dark' | 'light'): void;
   toast(level: Toast['level'], text: string): void;
   dismissToast(id: number): void;
@@ -62,13 +63,22 @@ interface Store {
 
 let toastSeq = 0;
 
-function loadSetup(): Setup {
-  const raw = safeGet('ol.setup');
-  if (!raw) return { steps: [] };
+export interface Clock {
+  day: string; // local date, YYYY-MM-DD
+  startedAt: number; // epoch ms
+  minutes: number; // 0 = open-ended
+}
+export const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+function loadClock(): Clock | null {
+  const raw = safeGet('ol.clock');
+  if (!raw) return null;
   try {
-    return normalizeSetup(JSON.parse(raw));
+    return JSON.parse(raw) as Clock;
   } catch {
-    return { steps: [] };
+    return null;
   }
 }
 function loadDraft(): Draft {
@@ -104,7 +114,8 @@ export const useStore = create<Store>((set, get) => ({
   unread: {},
   activeChannel: null,
   toasts: [],
-  setup: loadSetup(),
+  setup: { steps: [] },
+  clock: loadClock(),
   draft: loadDraft(),
   theme: loadTheme(),
 
@@ -121,6 +132,7 @@ export const useStore = create<Store>((set, get) => ({
         channels: s.channels ?? [],
         tickets: s.tickets ?? [],
         governor: s.governor,
+        setup: s.setup ? normalizeSetup(s.setup) : get().setup,
       });
     } catch (e) {
       set({ loaded: true, loadError: e instanceof Error ? e.message : 'Could not load your workspace.' });
@@ -183,9 +195,13 @@ export const useStore = create<Store>((set, get) => ({
     safeSet('ol.draft', JSON.stringify(draft));
     set({ draft });
   },
-  setSetup(s) {
-    safeSet('ol.setup', JSON.stringify(s));
-    set({ setup: s });
+  async clockIn(minutes) {
+    // "Open-ended" is sent as 12 hours, the most the server accepts.
+    const r = await api.clockIn(minutes === 0 ? 720 : minutes);
+    const clock = { day: today(), startedAt: Date.now(), minutes };
+    safeSet('ol.clock', JSON.stringify(clock));
+    set({ clock });
+    return r.standup_channel_id;
   },
   setTheme(t) {
     safeSet('ol.theme', t);
@@ -214,7 +230,7 @@ export const useStore = create<Store>((set, get) => ({
 
   async acceptOffer(companyId) {
     const res = await api.accept(companyId);
-    get().setSetup(normalizeSetup(res.setup));
+    set({ setup: normalizeSetup(res.setup) });
     await get().load();
   },
 }));

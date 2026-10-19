@@ -67,10 +67,25 @@ test('onboarding to ownership, in mock mode', async ({ page }) => {
   await shot(page, '07-setup-ok');
   await page.getByRole('button', { name: 'Go to the workspace' }).click();
 
+  // ---- clock in
+  const clock = page.getByTestId('clock-in');
+  await expect(clock).toBeVisible();
+  await page.waitForTimeout(1600);
+  await shot(page, '07b-clock-in');
+  await clock.getByRole('button', { name: '60 min' }).click();
+  await expect(page).toHaveURL(/\/channels\/kilnworks\.serving/);
+  await expect(page.getByTestId('messages')).toContainText('Standup');
+  await expect(page.getByTestId('session-clock')).toContainText('min left today');
+
   // ---- workspace
+  await page.locator('.side-link', { hasText: 'general' }).click();
   await expect(page).toHaveURL(/\/channels\/kilnworks\.general/);
   await expect(page.getByTestId('messages')).toContainText('Welcome to the Serving team, Luigi');
   await shot(page, '08-channel-general');
+  await page.getByRole('button', { name: 'Dana Whitfield' }).first().click();
+  await expect(page.getByTestId('persona-card')).toContainText('Engineering manager');
+  await shot(page, '08b-persona-card');
+  await page.getByTestId('persona-card').getByRole('button', { name: 'Close' }).click();
   await expect(page.locator('.side-link', { hasText: 'Theo Lindqvist' }).locator('.count')).toBeVisible();
   await page.locator('.side-link', { hasText: 'Theo Lindqvist' }).click();
   await expect(page.getByTestId('messages')).toContainText('my PR for the load generator is up');
@@ -103,7 +118,9 @@ test('onboarding to ownership, in mock mode', async ({ page }) => {
   await page.getByRole('button', { name: /loadgen\.py/ }).click();
   await commentOn(page, 'results.append(await one_request', 'Waits for each reply, so slow periods are under-sampled.', 'Blocker');
   await commentOn(page, '        return None', 'Failed requests vanish from the p99.', 'Major');
-  await commentOn(page, 'import asyncio', 'Not a real problem, just checking.', 'Nit');
+  await commentOn(page, 'import asyncio', 'Not a real problem, just checking.', 'Minor');
+  await commentOn(page, 'WARMUP_REQUESTS = 20', 'Good that this is a named constant.', 'Praise');
+  await expect(page.getByTestId('comment-composer')).toHaveCount(0);
   await shot(page, '13-review-comments');
   await page.getByRole('button', { name: 'Split' }).click();
   await expect(page.locator('table.diff.split')).toBeVisible();
@@ -148,6 +165,7 @@ test('onboarding to ownership, in mock mode', async ({ page }) => {
   const ex = page.getByTestId('explain');
   await expect(ex).toContainText('What does it do when the server gets slow?');
   await expect(page.getByTestId('expression')).toHaveText('neutral');
+  await expect(page.getByTestId('portrait-fallback')).toBeVisible(); // no portrait files in mock mode
   const say = async (text: string) => {
     await page.getByLabel('Your explanation').fill(text);
     await page.getByRole('button', { name: 'Send', exact: true }).click();
@@ -211,8 +229,9 @@ test('onboarding to ownership, in mock mode', async ({ page }) => {
   await expect(page.getByTestId('governor-banner')).toHaveCount(0);
 
   await page.locator('.side-link', { hasText: 'Office' }).click();
-  await expect(page.getByText('The office opens soon')).toBeVisible();
-  await shot(page, '28-office-placeholder');
+  await expect(page).toHaveURL(/\/office$/); // the pixel agent owns what renders here
+  await page.waitForTimeout(2500);
+  await shot(page, '28-office');
 
   await page.getByRole('button', { name: 'Toggle theme' }).click();
   await page.locator('.side-link', { hasText: 'Tickets' }).click();

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import type { QuizResult } from '../api';
-import { saveDebrief } from '../lib/debriefs';
 import { stageRoute } from '../lib/stages';
 import { useStore } from '../store';
 import { errText, useAsync } from '../ui/hooks';
@@ -37,11 +36,6 @@ function QuizInner() {
     try {
       const r = await api.submitQuiz(detail.id, answers);
       setResult(r);
-      saveDebrief(detail.id, {
-        stage: 'quiz',
-        passed: r.passed,
-        body_md: `## Quiz debrief\n\nYou scored **${Math.round(r.score * 100)}%**.\n\n` + r.results.map((x, i) => `${i + 1}. ${x.correct ? 'Correct.' : 'Not quite.'} ${x.explanation_md}`).join('\n'),
-      });
     } catch (e) {
       toast('warn', errText(e));
     } finally {

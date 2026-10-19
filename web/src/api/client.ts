@@ -71,4 +71,6 @@ export const realApi: Api = {
   changeCheck: (t, branch) => req('POST', `/tickets/${encodeURIComponent(t)}/change/check`, { branch }),
   own: (t) => req('POST', `/tickets/${encodeURIComponent(t)}/own`, { confirm: true, visibility: 'private' }),
   governor: () => req('GET', '/governor'),
+  debriefs: (t) => req('GET', `/tickets/${encodeURIComponent(t)}/debriefs`),
+  clockIn: (minutes) => req('POST', '/clock-in', { minutes }),
 };

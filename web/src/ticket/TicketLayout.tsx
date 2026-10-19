@@ -6,7 +6,6 @@ import { currentStage, STAGES, STAGE_LABEL, stageRoute, stageState, STATUS_LABEL
 import { useStore } from '../store';
 import { errText, useAsync } from '../ui/hooks';
 import { Markdown } from '../ui/Markdown';
-import { allDebriefs } from '../lib/debriefs';
 
 export interface TicketCtx {
   detail: TicketDetail;
@@ -84,7 +83,7 @@ export function TicketOverview() {
   const nav = useNavigate();
   const toast = useStore((s) => s.toast);
   const cur = currentStage(detail);
-  const debriefs = allDebriefs(detail.id, detail.stage_results);
+  const { data: debriefs } = useAsync(() => api.debriefs(detail.id), [detail.id, detail.stage_results.length]);
 
   const start = async () => {
     try {
@@ -117,7 +116,7 @@ export function TicketOverview() {
             Continue: {STAGE_LABEL[cur]}
           </Link>
         )}
-        {debriefs.length > 0 && (
+        {debriefs && debriefs.length > 0 && (
           <Link className="btn" to={`/tickets/${detail.id}/debriefs`}>
             Debriefs ({debriefs.length})
           </Link>
@@ -145,16 +144,17 @@ export function StageGate({ stage, children }: { stage: Stage; children: React.R
 
 export function Debriefs() {
   const { detail } = useTicketCtx();
-  const list = allDebriefs(detail.id, detail.stage_results);
+  const { data, error } = useAsync(() => api.debriefs(detail.id), [detail.id, detail.stage_results.length]);
+  const list = data ?? [];
   return (
     <div className="debriefs">
       <h2>Debriefs</h2>
-      {list.length === 0 && <p className="muted">No debriefs yet. They appear here after each stage.</p>}
+      {error && <p className="error">{error}</p>}
+      {list.length === 0 && !error && <p className="muted">No debriefs yet. They appear here after each stage.</p>}
       {STAGES.map((s) => list.filter((d) => d.stage === s)).flat().map((d) => (
         <article key={d.stage} className="debrief-card">
           <header>
             <b>{STAGE_LABEL[d.stage]}</b>
-            <span className={`tag ${d.passed ? 'good' : 'warn'}`}>{d.passed ? 'Passed' : 'Not passed'}</span>
           </header>
           <Markdown>{d.body_md}</Markdown>
         </article>

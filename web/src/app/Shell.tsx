@@ -4,6 +4,7 @@ import { bannerFor } from '../lib/governor';
 import { dmPartner, parseAvatar } from '../lib/util';
 import { useStore } from '../store';
 import { PersonaAvatar, PlayerAvatar } from '../ui/Avatars';
+import { ClockInGate, SessionClock } from './ClockIn';
 
 export function GovernorBanner() {
   const governor = useStore((s) => s.governor);
@@ -87,7 +88,10 @@ export function Shell() {
           {player && (
             <div className="side-me">
               <PlayerAvatar avatar={parseAvatar(player)} size={28} />
-              <span>{player.name}</span>
+              <span className="side-me-text">
+                <span>{player.name}</span>
+                <SessionClock />
+              </span>
             </div>
           )}
           <button className="btn small" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle theme">
@@ -95,6 +99,7 @@ export function Shell() {
           </button>
         </div>
       </aside>
+      <ClockInGate />
       <div className="main-col">
         <GovernorBanner />
         <div className="main-body">

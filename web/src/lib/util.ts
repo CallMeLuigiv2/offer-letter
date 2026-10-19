@@ -24,7 +24,7 @@ export function personaCompany(id: string): string {
 }
 
 export function portraitUrl(personaId: string, expression = 'neutral'): string {
-  return `/portraits/${personaCompany(personaId)}/${personaSlug(personaId)}/${expression}.png`;
+  return `/portraits/${personaCompany(personaId)}/${personaSlug(personaId)}/${expression}.webp`;
 }
 
 export function channelMembers(c: Channel): string[] {
@@ -100,4 +100,13 @@ export function parseJson<T>(v: unknown, fallback: T): T {
 
 export function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Resolve a persona reference the server may send as an id, a bare slug, or an object. */
+export function personaRef(ref: string | { id: string }): string {
+  return typeof ref === 'string' ? ref : ref.id;
+}
+export function findPersona(personas: Persona[], ref: string | { id: string }): Persona | undefined {
+  const id = personaRef(ref);
+  return personas.find((p) => p.id === id) ?? personas.find((p) => personaSlug(p.id) === personaSlug(id));
 }

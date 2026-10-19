@@ -1,6 +1,8 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
+const API = process.env.OL_API ?? 'http://127.0.0.1:8765';
+
 export default defineConfig({
   plugins: [react()],
   build: { target: 'es2022' },
@@ -8,8 +10,9 @@ export default defineConfig({
     port: 5173,
     fs: { allow: ['..'] },
     proxy: {
-      '/api': 'http://127.0.0.1:8765',
-      '/ws': { target: 'ws://127.0.0.1:8765', ws: true },
+      '/api': API,
+      '/ws': { target: API.replace(/^http/, 'ws'), ws: true },
+      ...(process.env.VITE_MOCK === '1' ? {} : { '/portraits': API }),
     },
   },
   test: {
