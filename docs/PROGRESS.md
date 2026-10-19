@@ -10,15 +10,17 @@ D5/D6 in the morning).
 |---|---|---|---|---|
 | Repo foundation (CLAUDE.md, ARCHITECTURE, DECISIONS, cast) | lead | done | — | contract in docs/ARCHITECTURE.md |
 | S1 teammates on plan (probe) | lead | done | 2 live Haiku runs 2026-10-19 | rate_limit_event carries five_hour utilization; isolation OK |
-| WSL update + re-probe (S11, D2) | lead | running | — | |
-| A. Kilnworks content kit + KLN-01 | agent `content` | not started | verify_kit.py | |
-| B. Server core | agent `server` | not started | uv run pytest | |
-| C. Web app | agent `web` | not started | pnpm test / e2e | |
-| D. Pixel office: tileset, map, sprites, Phaser scene (S3, D3) | agent `pixel` | not started | screenshots via headless browser | |
-| E. Portraits: ComfyUI + Animagine (S7, D4) | agent `portraits` | not started | images reviewed | |
-| F. Teammate runner (real) + governor | after B | not started | unit + 1 live smoke | |
+| WSL update + re-probe (S11, D2) | lead | done | probes after update | WSL 3.0.3 / kernel 6.18: cgroup v2 ON (BLJ-02 unblocked); svm still absent (BLJ-03 blocked). docs/spikes/S11.md |
+| A. Kilnworks content kit + KLN-01 | agent `content` (opus) | running | verify_kit.py | |
+| B. Server core (+ real runner + governor) | agent `server` (sonnet) | running | uv run pytest | |
+| C. Web app | agent `web` (sonnet) | running | pnpm test / e2e | |
+| D. Pixel office: tileset, map, sprites, Phaser scene (S3, D3) | agent `pixel` (opus) | running | screenshots via headless browser | |
+| E1. Portraits setup: ComfyUI + Animagine install + smoke (D4) | agent `portraits-setup` (haiku) | running |
+| E2. Portrait pipeline: 6 cast × 7 expressions (S7) | next free heavy slot after E1 | queued | images reviewed | |
+| F. Teammate runner (real) + governor | folded into B | — | unit + 1 live smoke | |
 | G. Integration + end-to-end KLN-01 run | lead | not started | Playwright e2e | |
 
 ## Log
 
 - 2026-10-19 04:10 — foundation written; S1 probe passed (Haiku, cost <$0.003).
+- 2026-10-19 04:55 — WSL updated (S11). Agents launched: content, server, web, pixel (heavy) + portraits-setup (haiku). Hourly watchdog cron at :47 (session-only, expires in 7 days; delete when the build is done).
