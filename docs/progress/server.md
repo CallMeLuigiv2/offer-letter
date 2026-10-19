@@ -95,3 +95,7 @@ Note for the lead (content's suggestion): precision = matching / all comments, s
 
 - Role lookups are whole-word and ordered: `pick_role(people, "engineering manager", "manager")` finds the EM before a "Product manager"; same for tech lead. Used by the welcome, clock-in thanks, the `own` note, and `CompanyPack.role_persona`. `ROLE_KEYWORDS` keys are now whole-word roles (`engineering manager`, `product manager`, ...), so "Engineering manager" no longer inherits engineer keywords.
 - `answer_key.also_valid` (path + line range) comments are left out of the precision denominator and never false flags (same as praise/nit); they can't count toward recall unless they match an issue.
+
+## Real-kit change + own (2026-10-19, after content's READY)
+
+Branch `luigi/kln-01-fixes` = Theo's PR head + the kit's `reference/` overlay, pushed to the company remote. `POST /change/check` ran the real hidden grader in 27 s: 7/7 pass, stage -> own. `POST /own` with gh mocked ran `gh repo create kiln-bench --private --source <clone> --remote owned --push`, ticket -> done. An unpushed branch gives the plain "push it first" 409. (Overlaying the reference on `main` instead of the PR head fails 2 checks, as expected: the fix builds on Theo's files.) Teammates were the DemoRunner; earlier stages were covered in the previous real run.

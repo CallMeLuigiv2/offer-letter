@@ -38,7 +38,8 @@ finish something). Decisions: `docs/DECISIONS.md`.
    `resetsAt` (epoch s) — the governor reads that.
 3. **Git stays truthful.** Teammate commits use the persona's name with
    " (AI teammate)" and an email at `<persona>@<company>.offerletter.invalid`
-   plus a trailer `Offer-Letter-Persona: <id>`. Luigi's commits are his own
+   plus a trailer `Offer-Letter-Persona: <company>.<slug>` (the full persona id,
+   e.g. `kilnworks.theo`). Luigi's commits are his own
    identity. Never rewrite authorship.
 4. **Answer keys never reach his repo.** Planted-bug keys, quiz answers and
    hidden grader tests live in the content kit / server data, never in the
