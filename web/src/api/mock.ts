@@ -174,7 +174,7 @@ function scoreReview(): ReviewScore {
     const hit = mine.find((x) => !claimed.has(x.id) && x.path === issue.path && x.side === 'new' && Math.abs(x.line - line) <= 1);
     if (hit) {
       claimed.add(hit.id);
-      found.push({ issue_id: issue.id, comment_id: hit.id });
+      found.push({ issue_id: issue.id, comment_id: hit.id, title: issue.title, explanation: issue.explanation });
     }
   }
   const foundIds = new Set(found.map((f) => f.issue_id));

@@ -32,7 +32,9 @@ def score_review(issues: list[dict], decoys: list[dict], comments: list[dict],
         hits = [c for c in comments if _near(c, issue["path"], issue["line_start"], issue["line_end"])]
         matching_ids.update(c["id"] for c in hits)
         if hits:
-            found.append({"issue_id": issue["id"], "comment_id": hits[0]["id"]})
+            # after submission he sees what each catch was and why it mattered, not just an id
+            found.append({"issue_id": issue["id"], "comment_id": hits[0]["id"], "title": issue["title"],
+                          "explanation": issue.get("explanation_md", "")})
     found_ids = {f["issue_id"] for f in found}
     missed = [
         {"issue_id": i["id"], "title": i["title"], "path": i["path"], "line": i["line_start"],

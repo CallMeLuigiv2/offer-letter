@@ -112,8 +112,9 @@ function Results({
               const l = linkFor(f.comment_id);
               return (
                 <li key={f.issue_id} className="found">
-                  <b>{f.issue_id}</b>
+                  <b>{f.title ?? f.issue_id}</b>
                   {l && <button className="link-btn" onClick={() => onJump(l.path, l.line, l.side)}>{l.path}:{l.line}</button>}
+                  {f.explanation && <Markdown>{f.explanation}</Markdown>}
                 </li>
               );
             })}

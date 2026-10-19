@@ -210,7 +210,7 @@ export interface NewComment {
 }
 
 export interface ReviewScore {
-  found: { issue_id: string; comment_id: string }[];
+  found: { issue_id: string; comment_id: string; title?: string; explanation?: string }[];
   missed: { issue_id: string; title: string; path: string; line: number; explanation: string }[];
   false_flags: string[];
   recall: number;
