@@ -1,0 +1,128 @@
+{
+  "dana": {
+    "seed": 1002,
+    "base_prompt": "1girl, solo, mature female, adult woman, middle-aged, early 40s, black hair, streaked hair, white streak, grey streak, multicolored hair, short hair, round eyewear, brown-framed eyewear, olive cardigan, white t-shirt, anime, visual novel, anime coloring, bust, upper body, portrait, looking at viewer, simple background, white background, soft studio lighting, closed mouth, light smile, masterpiece, high score, great score, absurdres, safe",
+    "negative": "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, low score, bad score, average score, signature, watermark, username, blurry, nsfw, cleavage, revealing clothes",
+    "expression_tags": {
+      "happy": "smile, happy",
+      "skeptical": "raised eyebrow, frown, narrowed eyes",
+      "thinking": "thinking, looking to the side, hand not visible, pursed lips",
+      "concerned": "worried, furrowed brow, frown",
+      "surprised": "surprised, wide-eyed, open mouth",
+      "laughing": "laughing, open mouth, closed eyes"
+    },
+    "talk_tags": "open mouth, talking",
+    "neutral_tags": "closed mouth, light smile",
+    "face_box": [
+      118,
+      207,
+      584,
+      584
+    ]
+  },
+  "kenji": {
+    "seed": 1002,
+    "base_prompt": "1boy, solo, male focus, mature male, adult, mid 30s, black hair, undercut, headphones around neck, charcoal hoodie, grey hoodie, anime, visual novel, anime coloring, bust, upper body, portrait, looking at viewer, simple background, white background, soft studio lighting, closed mouth, light smile, masterpiece, high score, great score, absurdres, safe",
+    "negative": "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, low score, bad score, average score, signature, watermark, username, blurry, nsfw, cleavage, revealing clothes",
+    "expression_tags": {
+      "happy": "smile, happy",
+      "skeptical": "raised eyebrow, frown",
+      "thinking": "thinking, looking to the side, pursed lips",
+      "concerned": "worried, furrowed brow",
+      "surprised": "surprised, wide-eyed, open mouth",
+      "laughing": "laughing, open mouth, closed eyes"
+    },
+    "talk_tags": "open mouth, talking",
+    "neutral_tags": "closed mouth, light smile",
+    "face_box": [
+      290,
+      225,
+      330,
+      395
+    ]
+  },
+  "ines": {
+    "seed": 1001,
+    "base_prompt": "1girl, solo, adult, late 20s, long hair, red hair, dark red hair, low ponytail, freckles, green flannel shirt, plaid shirt, anime, visual novel, anime coloring, bust, upper body, portrait, looking at viewer, simple background, white background, soft studio lighting, closed mouth, light smile, masterpiece, high score, great score, absurdres, safe",
+    "negative": "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, low score, bad score, average score, signature, watermark, username, blurry, nsfw, cleavage, revealing clothes",
+    "expression_tags": {
+      "happy": "smile, happy",
+      "skeptical": "raised eyebrow, frown",
+      "thinking": "thinking, looking to the side, pursed lips",
+      "concerned": "worried, furrowed brow",
+      "surprised": "surprised, wide-eyed, open mouth",
+      "laughing": "laughing, open mouth, closed eyes"
+    },
+    "talk_tags": "open mouth, talking",
+    "neutral_tags": "closed mouth, light smile",
+    "face_box": [
+      267,
+      298,
+      497,
+      497
+    ]
+  },
+  "theo": {
+    "seed": 1001,
+    "base_prompt": "1boy, solo, male focus, young man, early 20s, messy hair, blond hair, oversized mustard t-shirt, one earbud, wireless earbuds, anime, visual novel, anime coloring, bust, upper body, portrait, looking at viewer, simple background, white background, soft studio lighting, closed mouth, light smile, masterpiece, high score, great score, absurdres, safe",
+    "negative": "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, low score, bad score, average score, signature, watermark, username, blurry, nsfw, cleavage, revealing clothes",
+    "expression_tags": {
+      "happy": "smile, happy",
+      "skeptical": "raised eyebrow, frown, narrowed eyes",
+      "thinking": "thinking, looking to the side, hand not visible, pursed lips",
+      "concerned": "worried, furrowed brow, frown",
+      "surprised": "surprised, wide-eyed, open mouth",
+      "laughing": "laughing, open mouth, closed eyes"
+    },
+    "talk_tags": "open mouth, talking",
+    "neutral_tags": "closed mouth, light smile",
+    "face_box": [
+      260,
+      330,
+      390,
+      470
+    ]
+  },
+  "amara": {
+    "seed": 2004,
+    "base_prompt": "1girl, solo, dark skin, dark-skinned female, black hair, box braids, braided bun, high bun, hoop earrings, gold earrings, mustard blazer, white shirt, mature female, upper body, looking at viewer, anime, visual novel, anime coloring, bust, upper body, portrait, looking at viewer, simple background, white background, soft studio lighting, closed mouth, light smile, masterpiece, high score, great score, absurdres, safe",
+    "negative": "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, low score, bad score, average score, signature, watermark, username, blurry, nsfw, cleavage, revealing clothes, light skin, pale skin, blonde hair, brown hair, large breasts, cleavage",
+    "expression_tags": {
+      "happy": "smile, happy",
+      "skeptical": "raised eyebrow, frown, narrowed eyes",
+      "thinking": "thinking, looking to the side, hand not visible, pursed lips",
+      "concerned": "worried, furrowed brow, frown",
+      "surprised": "surprised, wide-eyed, open mouth",
+      "laughing": "laughing, open mouth, closed eyes"
+    },
+    "talk_tags": "open mouth, talking",
+    "neutral_tags": "closed mouth, light smile",
+    "face_box": [
+      255,
+      330,
+      310,
+      500
+    ]
+  },
+  "leo": {
+    "seed": 1002,
+    "base_prompt": "1boy, solo, male focus, young, 20 years old, black hair, bowl cut, blue lanyard, backpack, backpack strap, anime, visual novel, anime coloring, bust, upper body, portrait, looking at viewer, simple background, white background, soft studio lighting, closed mouth, light smile, masterpiece, high score, great score, absurdres, safe",
+    "negative": "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, low score, bad score, average score, signature, watermark, username, blurry, nsfw, cleavage, revealing clothes",
+    "expression_tags": {
+      "happy": "smile, happy",
+      "skeptical": "raised eyebrow, frown",
+      "thinking": "thinking, looking to the side, pursed lips",
+      "concerned": "worried, furrowed brow",
+      "surprised": "surprised, wide-eyed, open mouth",
+      "laughing": "laughing, open mouth, closed eyes"
+    },
+    "talk_tags": "open mouth, talking",
+    "neutral_tags": "closed mouth, light smile",
+    "face_box": [
+      186,
+      194,
+      478,
+      478
+    ]
+  }
+}

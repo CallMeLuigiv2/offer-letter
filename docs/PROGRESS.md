@@ -13,10 +13,10 @@ D5/D6 in the morning).
 | WSL update + re-probe (S11, D2) | lead | done | probes after update | WSL 3.0.3 / kernel 6.18: cgroup v2 ON (BLJ-02 unblocked); svm still absent (BLJ-03 blocked). docs/spikes/S11.md |
 | A. Kilnworks content kit + KLN-01 | agent `content` (opus) | running | verify_kit.py | |
 | B. Server core (+ real runner + governor) | agent `server` (sonnet) | v1 done (72ab0f9); follow-up running | uv run pytest: 47 passed (lead re-ran) + live Haiku resume smoke | follow-up: match web's asks, clock-in, run against real Kilnworks kit |
-| C. Web app | agent `web` (sonnet) | running | pnpm test / e2e | |
+| C. Web app | agent `web` (sonnet) | v1 done (fa34898); follow-up running | pnpm test: 39 passed + build clean (lead re-ran); headless e2e in mock mode; 30 screenshots (lead reviewed 4: good) | follow-up: clock-in, portraits + lip-flap, subtler diff colours, `pnpm e2e:real` against the server with `--fake-teammates` |
 | D. Pixel office: tileset, map, sprites, Phaser scene (S3, D3) | agent `pixel` (opus) | running | screenshots via headless browser | |
-| E1. Portraits setup: ComfyUI + Animagine install + smoke (D4) | agent `portraits-setup` (haiku) | running |
-| E2. Portrait pipeline: 6 cast × 7 expressions (S7) | next free heavy slot after E1 | queued | images reviewed | |
+| E1. Portraits setup: ComfyUI + Animagine install + smoke (D4) | agent `portraits-setup` (haiku) | done | smoke 13.4 s, peak 10.6 GB; lead viewed it: strong style, framing/age/streak to fix | ComfyUI v0.42.1 + torch 2.14.1+cu130 at C:\Users\Owner\tools\ComfyUI |
+| E2. Portrait pipeline: 6 cast × 7 expressions + talk variants (S7) | agent `portraits-setup` (haiku, resumed) | running | images reviewed | |
 | F. Teammate runner (real) + governor | folded into B | — | unit + 1 live smoke | |
 | G. Integration + end-to-end KLN-01 run | lead | not started | Playwright e2e | |
 

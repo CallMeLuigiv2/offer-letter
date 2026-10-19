@@ -132,7 +132,7 @@ Contract notes added 2026-10-19 (server ↔ web reconciliation):
 - Quiz answers: the option **string** for mcq/which_test; typed text for predict_output (compared after trimming and normalising whitespace).
 - `POST /tickets/{id}/explain/messages` → `{turn, player_turn}` where `turn` is the teammate's reply; explain turns may carry `expression` (neutral, happy, skeptical, thinking, concerned, surprised, laughing).
 - Message `author` is `player`, a persona id like `kilnworks.dana`, or `system`. DM channel ids end with `.<persona slug>`; `members_json` lists persona ids.
-- Static: `/portraits/<company>/<persona>/<expression>.png` from `content/companies/<company>/portraits/<persona>/`; `/office/**` from `web/public/office/**`.
+- Static: `/portraits/<company>/<persona>/<expression>.webp` and `<expression>_talk.webp` (the open-mouth frame for lip-flap) from `content/companies/<company>/portraits/<persona>/`; `/office/**` from `web/public/office/**`. Portraits are WebP q85, 512 px wide (PNG was 44 MB for one company).
 
 Stage order for `review-to-own`: `review` → `quiz` → `explain` → `change` →
 `own` → `done`. A stage unlocks only when the previous stage_result passed.

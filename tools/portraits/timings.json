@@ -1,0 +1,58 @@
+[
+  {
+    "stage": "base",
+    "started": "2026-10-19T05:14:17",
+    "seconds": 224.9,
+    "generations": 24,
+    "peak_gpu_mib_whole_gpu": 10848
+  },
+  {
+    "stage": "expr",
+    "started": "2026-10-19T05:21:00",
+    "seconds": 347.5,
+    "generations": 36,
+    "peak_gpu_mib_whole_gpu": 10880
+  },
+  {
+    "stage": "talk",
+    "started": "2026-10-19T05:27:58",
+    "seconds": 412.9,
+    "generations": 42,
+    "peak_gpu_mib_whole_gpu": 10876
+  },
+  {
+    "stage": "base",
+    "started": "2026-10-19T05:31:20",
+    "seconds": 58.5,
+    "generations": 6,
+    "peak_gpu_mib_whole_gpu": 10844
+  },
+  {
+    "stage": "expr happy,skeptical,thinking,concerned,surprised,laughing @denoise 0.55",
+    "started": "2026-10-19T05:32:45",
+    "seconds": 57.7,
+    "generations": 6,
+    "peak_gpu_mib_whole_gpu": 10876
+  },
+  {
+    "stage": "talk",
+    "started": "2026-10-19T05:33:54",
+    "seconds": 68.9,
+    "generations": 7,
+    "peak_gpu_mib_whole_gpu": 10876
+  },
+  {
+    "stage": "expr skeptical,concerned,thinking @denoise 0.65",
+    "started": "2026-10-19T05:35:32",
+    "seconds": 88.6,
+    "generations": 9,
+    "peak_gpu_mib_whole_gpu": 10876
+  },
+  {
+    "stage": "talk",
+    "started": "2026-10-19T05:37:01",
+    "seconds": 89.0,
+    "generations": 9,
+    "peak_gpu_mib_whole_gpu": 10876
+  }
+]
