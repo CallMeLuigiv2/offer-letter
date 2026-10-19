@@ -11,7 +11,8 @@ D5/D6 in the morning).
 | Repo foundation (CLAUDE.md, ARCHITECTURE, DECISIONS, cast) | lead | done | — | contract in docs/ARCHITECTURE.md |
 | S1 teammates on plan (probe) | lead | done | 2 live Haiku runs 2026-10-19 | rate_limit_event carries five_hour utilization; isolation OK |
 | WSL update + re-probe (S11, D2) | lead | done | probes after update | WSL 3.0.3 / kernel 6.18: cgroup v2 ON (BLJ-02 unblocked); svm still absent (BLJ-03 blocked). docs/spikes/S11.md |
-| A. Kilnworks content kit + KLN-01 | agent `content` (opus) | running | verify_kit.py | |
+| A. Kilnworks content kit + KLN-01 | agent `content` (opus) | done (ab06ec3) | verify_kit: 73 checks, 0 failed (lead re-ran) | 6 planted + 2 decoys; grader 8 checks fail on PR, pass with reference; leak checks pass |
+| J. Persona behaviour eval + fixes (real teammate runs) | agent `persona-eval` (opus) | running | docs/evals/personas-2026-10-19.md | ≤60 calls, stops at 70% utilisation |
 | B. Server core (+ real runner + governor) | agent `server` (sonnet) | done (72ab0f9, 5722758) | uv run pytest: 60 passed (lead re-ran); real-kit run with real Claude (review 2/6 fails bar, 5/6 passes; quiz 10/10; Haiku Theo turn 4.4 s; Sonnet grader correctly refused a 1-turn explain) | `--fake-teammates` for e2e; praise/nit excluded from precision; change + own stages only tested on the fixture |
 | H. Voice cast + blind-test prep for S4 (D5) | agent `voice` (sonnet) | done (cc917fd) | 129 clips checked by duration/silence/clipping/pitch; headless click-through of 18 screens, no console errors | Luigi: `uv run python tools/voice/serve.py` → http://127.0.0.1:8770 (≤15 min). Casting proposed (blends for male voices); his test decides |
 | C. Web app | agent `web` (sonnet) | v1 done (fa34898); follow-up running | pnpm test: 39 passed + build clean (lead re-ran); headless e2e in mock mode; 30 screenshots (lead reviewed 4: good) | follow-up: clock-in, portraits + lip-flap, subtler diff colours, `pnpm e2e:real` against the server with `--fake-teammates` |
@@ -28,3 +29,4 @@ D5/D6 in the morning).
 - 2026-10-19 04:55 — WSL updated (S11). Agents launched: content, server, web, pixel (heavy) + portraits-setup (haiku). Hourly watchdog cron at :47 (session-only, expires in 7 days; delete when the build is done).
 - 2026-10-19 05:15 — server v1 committed (47 tests, verified). Contract additions folded into ARCHITECTURE (explain.turn, expression, debriefs, clock-in, setup in /state, static portraits/office, CLAUDE_CODE_DISABLE_AUTO_MEMORY). LF enforced (.gitattributes).
 - 2026-10-19 05:50 — watchdog: content/server/pixel running, web waiting on server; portraits done; added `praise` severity (excluded from precision) per content agent note.
+- 2026-10-19 06:30 — content kit committed (verify_kit 73/0). Lead re-ran `pnpm e2e:real` against the production build served by the server (latest server, fake teammates): full KLN-01 journey passes in 1.0 min. Persona eval started (real teammate runs).
