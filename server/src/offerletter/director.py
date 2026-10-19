@@ -127,6 +127,37 @@ class Director:
         self.typing(persona, channel_id, False)
         self.post(channel_id, persona.id, body, attachments)
 
+    # -- clock in -------------------------------------------------------------------------------
+
+    def clock_in(self, company_id: str, minutes: int) -> str:
+        """Records the session and has the tech lead post the standup prompt. Returns the team channel id."""
+        people = self.personas(company_id)
+        lead = next((p for p in people if "lead" in p.role.lower()), people[0] if people else None)
+        channels = self.db.where("channel", company_id=company_id, kind="channel")
+        team = channels[0]["id"]
+        player = self.db.one("SELECT name FROM player LIMIT 1") or {"name": "there"}
+        self.db.insert("work_session", id=new_id(), company_id=company_id, minutes=minutes, started_at=now(),
+                       standup_channel_id=team, thanked=0)
+        if lead:
+            body = (f"Morning {player['name']}. Standup: what are you working on today, and is anything blocking "
+                    f"you? You've got {minutes} minutes blocked out, so say what you want done by the end of it.")
+            self.spawn(self._scripted(lead, team, 1, body))
+        return team
+
+    def _maybe_thank(self, channel: Row) -> None:
+        """The manager says a brief thanks to the first standup reply of the day, never more than once a day."""
+        today = now()[:10]
+        sessions = self.db.all("SELECT * FROM work_session WHERE company_id = ? AND substr(started_at, 1, 10) = ? "
+                               "ORDER BY rowid", (channel["company_id"], today))
+        if not sessions or any(s["thanked"] for s in sessions) or sessions[-1]["standup_channel_id"] != channel["id"]:
+            return
+        manager = next((p for p in self.personas(channel["company_id"]) if "manager" in p.role.lower()), None)
+        if manager is None:
+            return
+        self.db.update("work_session", sessions[-1]["id"], thanked=1)
+        body = self.rng.choice(["Thanks, sounds good.", "Thanks for the update.", "Got it, thanks."])
+        self.spawn(self._scripted(manager, channel["id"], 2, body))
+
     # -- player messages ------------------------------------------------------------------------
 
     def choose_responders(self, channel: Row, body: str, people: list[Persona]) -> list[Persona]:
@@ -160,6 +191,8 @@ class Director:
         return [best] if self.rng.random() < 0.9 else []
 
     def on_player_message(self, channel: Row, message: Row) -> None:
+        if channel["kind"] == "channel":
+            self._maybe_thank(channel)
         people = self.personas(channel["company_id"])
         for persona in self.choose_responders(channel, message["body_md"], people):
             self.spawn(self._reply(persona, channel, message))

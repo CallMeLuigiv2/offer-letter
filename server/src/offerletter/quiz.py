@@ -10,7 +10,32 @@ PUBLIC_KEYS = ("id", "kind", "prompt_md", "code", "options")
 
 def public_questions(quiz: dict[str, Any]) -> list[dict[str, Any]]:
     """The questions without answer, explanation or verify command."""
-    return [{k: q[k] for k in PUBLIC_KEYS if k in q} for q in quiz.get("questions", [])]
+    out = []
+    for q in quiz.get("questions", []):
+        item = {k: q[k] for k in PUBLIC_KEYS if k in q}
+        if "options" in item:
+            item["options"] = [option_text(o) for o in item["options"]]  # the web sends the option string back
+        out.append(item)
+    return out
+
+
+def option_text(option: Any) -> str:
+    return str(option.get("text", option.get("id", ""))) if isinstance(option, dict) else str(option)
+
+
+def accepted_answers(question: dict[str, Any]) -> list[Any]:
+    """The kit's answer plus, for choice questions, the text of the option it points at (by id or letter)."""
+    answer = question["answer"]
+    options = question.get("options") or []
+    if not options or isinstance(answer, list):
+        return [answer]
+    accepted = [answer]
+    for index, option in enumerate(options):
+        ident = option.get("id") if isinstance(option, dict) else None
+        letter = chr(ord("a") + index)
+        if _norm(answer) in (_norm(ident) if ident is not None else None, letter):
+            accepted.append(option_text(option))
+    return accepted
 
 
 def _norm(value: Any) -> Any:
@@ -25,11 +50,13 @@ def _norm(value: Any) -> Any:
 def is_correct(question: dict[str, Any], given: Any) -> bool:
     if given is None or given == "" or given == []:
         return False
-    answer = question["answer"]
-    if _norm(given) == _norm(answer):
-        return True
-    # a single answer may be written as a list of one, or a list answer sent as one string
-    return _norm([given] if not isinstance(given, list) else given) == _norm([answer] if not isinstance(answer, list) else answer)
+    for answer in accepted_answers(question):
+        if _norm(given) == _norm(answer):
+            return True
+        # a single answer may be written as a list of one, or a list answer sent as one string
+        if _norm(given if isinstance(given, list) else [given]) == _norm(answer if isinstance(answer, list) else [answer]):
+            return True
+    return False
 
 
 def grade(quiz: dict[str, Any], answers: dict[str, Any], bar: float = PASS_BAR) -> dict[str, Any]:

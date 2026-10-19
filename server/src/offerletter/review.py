@@ -2,7 +2,7 @@
 
 A comment matches an issue when the path is the same and the line is within
 [line_start - 2, line_end + 2]. Each issue counts at most once toward recall. Comments on decoys
-(code that looks wrong but is fine) are false flags. precision = matching comments / all comments.
+(code that looks wrong but is fine) are false flags. precision = matching / all comments, leaving out praise and nit ones (never false flags).
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from typing import Any
 SLACK = 2
 RECALL_BAR = 0.6
 PRECISION_BAR = 0.5
+UNJUDGED = ("praise", "nit")
 
 
 def _near(comment: dict[str, Any], path: str, low: int, high: int) -> bool:
@@ -21,6 +22,8 @@ def _near(comment: dict[str, Any], path: str, low: int, high: int) -> bool:
 def score_review(issues: list[dict], decoys: list[dict], comments: list[dict]) -> dict[str, Any]:
     """`comments` are the learner's new-side comments (id, path, line). Returns the section 4 score object."""
     found, matching_ids = [], set()
+    # praise and nit comments may match an issue but never cost precision or count as false flags
+    judged = [c for c in comments if c.get("severity") not in UNJUDGED]
     for issue in issues:
         hits = [c for c in comments if _near(c, issue["path"], issue["line_start"], issue["line_end"])]
         matching_ids.update(c["id"] for c in hits)
@@ -33,7 +36,7 @@ def score_review(issues: list[dict], decoys: list[dict], comments: list[dict]) -
         for i in issues if i["id"] not in found_ids
     ]
     false_flags = [
-        c["id"] for c in comments
+        c["id"] for c in judged
         if c["id"] not in matching_ids and any(_near(c, d["path"], d["line"], d["line"]) for d in decoys)
     ]
     return {
@@ -41,7 +44,7 @@ def score_review(issues: list[dict], decoys: list[dict], comments: list[dict]) -
         "missed": missed,
         "false_flags": false_flags,
         "recall": len(found) / len(issues) if issues else 1.0,
-        "precision": len(matching_ids) / len(comments) if comments else 0.0,
+        "precision": sum(c["id"] in matching_ids for c in judged) / len(judged) if judged else 0.0,
     }
 
 

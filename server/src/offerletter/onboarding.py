@@ -27,25 +27,31 @@ def create_player(svc: Services, name: str, pronouns: str | None, avatar: Any) -
     return out
 
 
-def _employment(svc: Services) -> Row | None:
+def current_employment(svc: Services) -> Row | None:
     return svc.db.one("SELECT * FROM employment WHERE status != 'left' ORDER BY rowid LIMIT 1")
 
 
 def setup_checklist(svc: Services, pack: kits.CompanyPack, first_ticket_id: str | None) -> dict[str, Any]:
     """The laptop-setup checklist shown after joining: where his clones are and what to run."""
     steps, repos = [], []
-    for repo in pack.repos:
+    for n, repo in enumerate(pack.repos):
+        suffix = "" if n == 0 else f"-{repo['name']}"  # the first repo's step is plain "clone" (the web looks for it)
         path = svc.settings.work_dir / pack.id / repo["name"]
         repos.append({"name": repo["name"], "path": str(path),
                       "remote": str(git_service.remote_path(svc.settings.remotes_dir, pack.id, repo["name"]))})
         steps += [
-            {"id": f"clone-{repo['name']}", "label": f"Your copy of {repo['name']} is ready", "path": str(path)},
+            {"id": f"clone{suffix}", "label": f"Your copy of {repo['name']} is ready", "path": str(path)},
             {"id": f"open-{repo['name']}", "label": "Open it in your editor", "path": str(path),
              "command": f'code "{path}"'},
             {"id": f"tests-{repo['name']}", "label": "Run the tests and see them green", "path": str(path),
              "command": "uv run --with pytest pytest -q"},
         ]
-    return {"steps": steps, "repos": repos, "first_ticket": first_ticket_id}
+    return {"title": f"Set up your laptop for {pack.data.get('name', pack.id)}", "steps": steps, "repos": repos,
+            "first_ticket": first_ticket_id}
+
+
+def _first_ticket_id_of(tickets: list[Row]) -> str | None:
+    return next((t["id"] for t in tickets if t["assignee"] == "player"), None)
 
 
 def _first_ticket_id(pack: kits.CompanyPack) -> str | None:
@@ -63,7 +69,7 @@ async def accept(svc: Services, company_id: str) -> dict[str, Any]:
         raise ApiError(404, f"There is no company {company_id!r} in the catalog.")
     if not entry["kit_ready"]:
         raise ApiError(409, f"{entry['name']} isn't hiring yet. Pick a company marked ready.")
-    current = _employment(svc)
+    current = current_employment(svc)
     if current and current["company_id"] != company_id:
         raise ApiError(409, "You already have a job. Finish or leave it before joining another company.")
     try:
@@ -134,7 +140,7 @@ def _insert_rows(svc: Services, pack: kits.CompanyPack, player: Row, first_id: s
 
 def setup_check(svc: Services) -> dict[str, Any]:
     """Is his clone there, wired to the company remote, and do its tests run green?"""
-    employment = _employment(svc)
+    employment = current_employment(svc)
     if employment is None:
         raise ApiError(409, "Join a company first.")
     pack = kits.load_pack(svc.settings.content_dir, employment["company_id"])
@@ -169,9 +175,9 @@ def _run_tests(svc: Services, path: Path) -> tuple[bool, str]:
 def state(svc: Services) -> dict[str, Any]:
     db = svc.db
     player = decode(db.one("SELECT * FROM player LIMIT 1"))
-    employment = _employment(svc)
+    employment = current_employment(svc)
     company = None
-    personas, channels, tickets = [], [], []
+    personas, channels, tickets, setup = [], [], [], None
     if employment:
         cid = employment["company_id"]
         entry = catalog.find_company(svc.settings.content_dir, cid) or {}
@@ -180,5 +186,6 @@ def state(svc: Services) -> dict[str, Any]:
         personas = db.where("persona", company_id=cid)
         channels = [decode(c) for c in db.where("channel", company_id=cid)]
         tickets = db.where("ticket", company_id=cid)
+        setup = setup_checklist(svc, kits.load_pack(svc.settings.content_dir, cid), _first_ticket_id_of(tickets))
     return {"player": player, "employment": employment, "company": company, "personas": personas,
-            "channels": channels, "tickets": tickets, "governor": svc.governor.row()}
+            "channels": channels, "tickets": tickets, "setup": setup, "governor": svc.governor.row()}

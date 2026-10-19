@@ -40,18 +40,18 @@ def test_accept_builds_world_and_state(client: TestClient, settings: Settings) -
     out = join(client)
     assert out["employment"]["status"] == "onboarding" and out["employment"]["level"] == "L1"
     assert {c["name"] for c in out["channels"] if c["kind"] == "channel"} == {"core-team", "random"}
-    assert len([c for c in out["channels"] if c["kind"] == "dm"]) == 2
+    assert len([c for c in out["channels"] if c["kind"] == "dm"]) == 3
     setup = out["setup"]
     clone = Path(setup["repos"][0]["path"])
     assert (clone / ".git").exists() and (clone / "stats.py").exists()
     assert Path(setup["repos"][0]["remote"]).exists()
-    assert [s["id"] for s in setup["steps"]][:1] == ["clone-app"]
+    assert [s["id"] for s in setup["steps"]][:1] == ["clone"]
     # answer keys never reach his clone
     assert not list(clone.rglob("answer_key*")) and not list(clone.rglob("grader"))
     assert (settings.kits_dir / "testco" / "T-01" / "answer_key.json").exists()
     assert not (settings.kits_dir / "testco" / "T-01" / "reference").exists()
     s = client.get("/api/state").json()
-    assert s["company"]["name"] == "Testco" and len(s["personas"]) == 2
+    assert s["company"]["name"] == "Testco" and len(s["personas"]) == 3
     assert s["tickets"][0]["id"] == "T-01" and s["tickets"][0]["status"] == "assigned"
     assert s["channels"][0]["members"][0] == "player"
     # joining twice is harmless
@@ -177,7 +177,7 @@ def test_review_scoring_through_the_api(client: TestClient) -> None:
 
         # a weak review fails; the missed list appears only now
         client.post("/api/prs/1/comments", json={"path": "stats.py", "line": 7, "body_md": "hm", "severity": "major"})
-        client.post("/api/prs/1/comments", json={"path": "report.py", "line": 12, "body_md": "format?", "severity": "nit"})
+        client.post("/api/prs/1/comments", json={"path": "report.py", "line": 12, "body_md": "format?", "severity": "minor"})
         assert "missed" not in str(client.get("/api/prs/1/comments").json())
         weak = client.post("/api/prs/1/review", json={"verdict": "approve", "body_md": "lgtm"}).json()
         assert not weak["passed"] and weak["score"]["recall"] == 0.5 and len(weak["score"]["missed"]) == 1

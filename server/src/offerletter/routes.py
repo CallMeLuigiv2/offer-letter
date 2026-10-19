@@ -40,7 +40,7 @@ class CommentIn(BaseModel):
     line: int = Field(ge=1)
     side: Literal["new", "old"] = "new"
     body_md: str = Field(min_length=1)
-    severity: Literal["blocker", "major", "minor", "nit"] = "minor"
+    severity: Literal["blocker", "major", "minor", "nit", "praise"] = "minor"
 
 
 class ReviewIn(BaseModel):
@@ -58,6 +58,10 @@ class ExplainIn(BaseModel):
 
 class ChangeIn(BaseModel):
     branch: str
+
+
+class ClockInIn(BaseModel):
+    minutes: int = Field(ge=5, le=720)
 
 
 class OwnIn(BaseModel):
@@ -175,6 +179,18 @@ def build_router(svc: Services) -> APIRouter:
         results = [decode(s) for s in db.where("stage_result", ticket_id=ticket_id)]
         return {**ticket, "brief_md": kit.ticket.get("brief_md", ""), "pr_id": pr["id"] if pr else None,
                 "stage_results": results}
+
+    @r.get("/tickets/{ticket_id}/debriefs")
+    async def get_debriefs(ticket_id: str) -> list[Row]:
+        stages.get_ticket(db, ticket_id)
+        return db.where("debrief", ticket_id=ticket_id)
+
+    @r.post("/clock-in")
+    async def clock_in(body: ClockInIn) -> dict[str, Any]:
+        employment = onboarding.current_employment(svc)
+        if employment is None:
+            raise ApiError(409, "Join a company before you clock in.")
+        return {"standup_channel_id": svc.director.clock_in(employment["company_id"], body.minutes)}
 
     @r.post("/tickets/{ticket_id}/start")
     async def start_ticket(ticket_id: str) -> Row:
@@ -307,8 +323,9 @@ def build_router(svc: Services) -> APIRouter:
         finally:
             bus.publish("teammate.typing",
                         {"persona_id": persona.id, "channel_id": f"explain:{ticket_id}", "typing": False})
+        text, expression = explain.split_expression(reply.text)
         turn = db.insert("explain_turn", id=new_id(), ticket_id=ticket_id, author=persona.id,
-                         body_md=reply.text.strip(), created_at=now())
+                         body_md=text, expression=expression, created_at=now())
         bus.publish("explain.turn", turn)
         return {"turn": turn, "player_turn": player_turn}
 

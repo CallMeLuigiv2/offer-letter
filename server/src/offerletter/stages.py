@@ -50,7 +50,7 @@ def record_result(db: Database, bus: EventBus, ticket: Row, stage: str, passed: 
                   detail: dict[str, Any], debrief_md: str) -> Row:
     """Stores the result and debrief, emits stage.result, and advances the ticket on a first pass."""
     result = db.insert("stage_result", id=new_id(), ticket_id=ticket["id"], stage=stage, passed=int(passed),
-                       detail_json=dumps(detail), created_at=now())
+                       detail_json=dumps({**detail, "debrief_md": debrief_md}), created_at=now())
     db.insert("debrief", id=new_id(), ticket_id=ticket["id"], stage=stage, body_md=debrief_md, created_at=now())
     bus.publish("stage.result", decode(result))
     if passed and ticket["stage"] == stage:

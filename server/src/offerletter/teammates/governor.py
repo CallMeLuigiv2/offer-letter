@@ -36,15 +36,21 @@ class Governor:
     def __init__(self, db: Database, bus: EventBus, clock: Callable[[], float] = time.time):
         self._db, self._bus, self._clock = db, bus, clock
 
-    def row(self) -> Row:
+    def _raw(self) -> Row:
         row = self._db.get("governor", 1)
         assert row is not None
         return row
 
+    def row(self) -> Row:
+        """The governor row; `resets_at` is epoch seconds (stored as ISO internally)."""
+        row = self._raw()
+        resets = row["resets_at"]
+        return {**row, "resets_at": int(datetime.fromisoformat(resets).timestamp()) if resets else None}
+
     @property
     def mode(self) -> str:
         """Current mode. A lunch (or thrifty) reading goes stale once its window has reset."""
-        row = self.row()
+        row = self._raw()
         resets = row["resets_at"]
         if row["mode"] != "normal" and resets and datetime.fromisoformat(resets).timestamp() <= self._clock():
             self._db.update("governor", 1, mode="normal", five_hour_util=0.0, updated_at=now())
@@ -60,7 +66,7 @@ class Governor:
         return "haiku" if self.mode == "thrifty" else wanted
 
     def lunch_message(self) -> str:
-        return f"The team is out to lunch until {local_time_text(self.row()['resets_at'])}. Offline work only until then."
+        return f"The team is out to lunch until {local_time_text(self._raw()['resets_at'])}. Offline work only until then."
 
     def update(self, rate_limit: dict[str, Any] | None) -> Row:
         """Applies one run's rate_limit_info. Missing info leaves the state alone."""
@@ -69,15 +75,15 @@ class Governor:
         windows = rate_limit.get("unifiedWindows") or {}
         five = windows.get("five_hour") or windows.get(rate_limit.get("rateLimitType") or "") or {}
         seven = windows.get("seven_day") or {}
-        util = float(five.get("utilization", self.row()["five_hour_util"]))
+        util = float(five.get("utilization", self._raw()["five_hour_util"]))
         resets = five.get("resetsAt") or rate_limit.get("resetsAt")
-        resets_iso = datetime.fromtimestamp(resets, UTC).isoformat() if resets else self.row()["resets_at"]
+        resets_iso = datetime.fromtimestamp(resets, UTC).isoformat() if resets else self._raw()["resets_at"]
         mode = mode_for(util, rejected=rate_limit.get("status") == "rejected")
-        row = self._db.update(
+        self._db.update(
             "governor", 1, five_hour_util=util, seven_day_util=float(seven.get("utilization", 0.0)),
             resets_at=resets_iso, mode=mode, updated_at=now(),
         )
-        assert row is not None
+        row = self.row()
         self._bus.publish("governor.updated", row)
         if mode == "lunch":
             self._bus.notice(self.lunch_message())

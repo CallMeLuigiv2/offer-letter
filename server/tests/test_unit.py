@@ -67,7 +67,7 @@ def test_missed_list_carries_explanations_and_pass_bar() -> None:
     assert not review.review_passed(s)  # recall 0.5 < 0.6
     both = review.score_review(ISSUES, DECOYS, [c("1", "a.py", 10), c("2", "b.py", 5)])
     assert review.review_passed(both)
-    noisy = review.score_review(ISSUES, DECOYS, [c("1", "a.py", 10), c("2", "b.py", 5)] + [c(str(i), "x.py", i) for i in range(5)])
+    noisy = review.score_review(ISSUES, DECOYS, [c("1", "a.py", 10), c("2", "b.py", 5)] + [c(f"n{i}", "x.py", i) for i in range(5)])
     assert not review.review_passed(noisy)  # precision 2/7
 
 
@@ -146,7 +146,7 @@ def test_governor_treats_rejected_as_lunch_and_stores_iso_reset() -> None:
     gov = Governor(db, bus, clock=lambda: 1792400000.0)
     row = gov.update(info(0.2, status="rejected"))
     assert row["mode"] == "lunch"
-    assert datetime.fromisoformat(row["resets_at"]) == datetime.fromtimestamp(1792401000, UTC)
+    assert row["resets_at"] == 1792401000
 
 
 # -- runner stream parsing ----------------------------------------------------------------------

@@ -7,11 +7,34 @@ with a JSON schema, and we compute `passed` ourselves: every `must` point has to
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from .db import Row
 from .teammates.personas import Persona
 from .teammates.runner import TeammateError, TeammateRunner
+
+EXPRESSIONS = ("neutral", "happy", "skeptical", "thinking", "concerned", "surprised", "laughing")
+_TAG = re.compile(r"\s*\[expr:\s*(\w+)\s*\]\s*$", re.I)
+_KEYWORDS = (("laughing", r"\bha(ha)+\b|\blol\b"), ("surprised", r"\bwait\b|\breally\?|\bwow\b"),
+             ("skeptical", r"\bnot sure\b|\bhmm+\b|\bare you sure\b"), ("concerned", r"\bworr|\brisky\b|\bcareful\b"),
+             ("happy", r"\bnice\b|\bexactly\b|\bgreat\b|\bgood catch\b"), ("thinking", r"\?"))
+
+
+def split_expression(text: str) -> tuple[str, str]:
+    """(reply without the trailing [expr:x] tag, expression). Falls back to a tiny keyword rule, then neutral."""
+    text = text.strip()
+    match = _TAG.search(text)
+    if match:
+        text = text[: match.start()].rstrip()
+        if match.group(1).lower() in EXPRESSIONS:
+            return text, match.group(1).lower()
+    low = text.lower()
+    for name, pattern in _KEYWORDS:
+        if re.search(pattern, low):
+            return text, name
+    return text, "neutral"
+
 
 GRADE_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -53,6 +76,7 @@ def chat_prompt(persona: Persona, player_name: str, pr: Row | None, rubric: list
         f"{player_name} reviewed {pr_line} and is now explaining the problems and the fix to you in chat. "
         "Answer as yourself, in chat style: one to three short sentences, no lists, no headings. Ask one pointed "
         "follow-up at a time and push on vague answers. Do not tell them the answers and do not grade them. "
+        f"End with a tag showing your facial expression as you say it, one of [expr:{'|'.join(EXPRESSIONS)}]. "
         "Things you would want to hear them explain in their own words (never read these out):\n"
         f"{points}\n\nThe chat so far:\n{transcript(turns, player_name, persona)}\n\n{persona.first_name}:"
     )

@@ -16,7 +16,7 @@ D5/D6 in the morning).
 | C. Web app | agent `web` (sonnet) | v1 done (fa34898); follow-up running | pnpm test: 39 passed + build clean (lead re-ran); headless e2e in mock mode; 30 screenshots (lead reviewed 4: good) | follow-up: clock-in, portraits + lip-flap, subtler diff colours, `pnpm e2e:real` against the server with `--fake-teammates` |
 | D. Pixel office: tileset, map, sprites, Phaser scene (S3, D3) | agent `pixel` (opus) | running | screenshots via headless browser | |
 | E1. Portraits setup: ComfyUI + Animagine install + smoke (D4) | agent `portraits-setup` (haiku) | done | smoke 13.4 s, peak 10.6 GB; lead viewed it: strong style, framing/age/streak to fix | ComfyUI v0.42.1 + torch 2.14.1+cu130 at C:\Users\Owner\tools\ComfyUI |
-| E2. Portrait pipeline: 6 cast × 7 expressions + talk variants (S7) | agent `portraits-setup` (haiku, resumed) | running | images reviewed | |
+| E2. Portrait pipeline: 6 cast × 7 expressions + talk variants (S7) | agent `portraits-setup` (haiku, resumed) | done (925aa48) | lead reviewed all 6 contact sheets; Amara redone (skin/hair were wrong); 84 WebP, 8.5 MB | polish later: Amara's braids read as a plain bun + stray white panel behind her; heads touch the top edge for 4 of 6; "thinking" is subtle | images reviewed | |
 | F. Teammate runner (real) + governor | folded into B | — | unit + 1 live smoke | |
 | G. Integration + end-to-end KLN-01 run | lead | not started | Playwright e2e | |
 
@@ -25,3 +25,4 @@ D5/D6 in the morning).
 - 2026-10-19 04:10 — foundation written; S1 probe passed (Haiku, cost <$0.003).
 - 2026-10-19 04:55 — WSL updated (S11). Agents launched: content, server, web, pixel (heavy) + portraits-setup (haiku). Hourly watchdog cron at :47 (session-only, expires in 7 days; delete when the build is done).
 - 2026-10-19 05:15 — server v1 committed (47 tests, verified). Contract additions folded into ARCHITECTURE (explain.turn, expression, debriefs, clock-in, setup in /state, static portraits/office, CLAUDE_CODE_DISABLE_AUTO_MEMORY). LF enforced (.gitattributes).
+- 2026-10-19 05:50 — watchdog: content/server/pixel running, web waiting on server; portraits done; added `praise` severity (excluded from precision) per content agent note.

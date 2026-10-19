@@ -18,10 +18,16 @@ def main(argv: list[str] | None = None) -> None:
     serve.add_argument("--home", type=Path, help="data directory (default: OFFERLETTER_HOME, else C:/Users/Owner/OfferLetter)")
     serve.add_argument("--port", type=int, default=8765)
     serve.add_argument("--content", type=Path, help="content directory (default: <repo>/content)")
+    serve.add_argument("--fake-teammates", action="store_true",
+                       help="deterministic canned teammates (no Claude, no plan usage); for e2e tests")
     args = parser.parse_args(argv)
     settings = Settings.load(home=args.home, content=args.content, port=args.port)
     settings.home.mkdir(parents=True, exist_ok=True)
-    uvicorn.run(create_app(settings), host="127.0.0.1", port=settings.port)
+    runner = None
+    if args.fake_teammates:
+        from .teammates.demo import DemoRunner
+        runner, settings.delay_scale = DemoRunner(), 0.15
+    uvicorn.run(create_app(settings, runner=runner), host="127.0.0.1", port=settings.port)
 
 
 if __name__ == "__main__":

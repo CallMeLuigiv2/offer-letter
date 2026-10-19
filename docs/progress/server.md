@@ -56,3 +56,37 @@ Also verified by hand: `--json-schema` returns the object under `structured_outp
 - Python repos only for the change check (v0.1 scope).
 - Director is rule-based; no proactive teammate messages, so "pause background work in thrifty" is exposed (`Governor.background_paused`) but nothing background uses it yet.
 - Not exercised against the real Kilnworks kit (it did not exist yet); only the fixture.
+
+## Round 2: web asks + clock-in (2026-10-19) - 56 tests pass
+
+1. Quiz: `GET quiz` returns `options` as plain strings; mcq/which_test accept the option text (also the kit's id or letter); predict_output compares trimmed, whitespace-normalised, case-insensitive text.
+2. `setup` = `{title, steps[{id,label,path?,command?}], repos, first_ticket}`; first repo's step id is `clone`; also returned by `GET /state` (`setup`, null before onboarding).
+3. `explain/messages` returns `{turn: <teammate reply>, player_turn}` (awaited); `explain.turn` events kept (player and teammate turns).
+4. Explain turns have `expression` (neutral|happy|skeptical|thinking|concerned|surprised|laughing). The persona is asked to end with `[expr:x]`; the server strips it, falls back to a small keyword rule, then neutral. DB migration v2 adds the column.
+5. `GET /tickets/{id}/debriefs`; `debrief_md` is also inside every `stage_results[].detail`.
+6. Already so: authors are `player` / persona id / `system`; DM ids `<company>.dm.<slug>` with persona ids in `members`.
+7. `governor.resets_at` is epoch seconds everywhere (REST, events).
+8. `/portraits/<company>/<persona>/<expression>.png` from `content/companies/<company>/portraits/<persona>/` (404 when missing, path-safe).
+9. `/office/**` serves `web/public/office` when that directory exists.
+- Clock-in: `POST /api/clock-in {minutes 5..720}` -> `{standup_channel_id}`; stores a `work_session` row (migration v2), tech lead posts the standup prompt in the team channel; the manager's brief scripted "thanks" follows his first reply in that channel, at most once per day. 409 before joining a company.
+- Fixture kit now has a third persona (manager) for this.
+
+## Real Kilnworks kit run (2026-10-19, real build_kit.py, real Claude runner, temp home)
+
+Driver: scratchpad `real_kit_run.py` (in-process TestClient, `Settings.load` so `tools/build_kit.py` was used). No server fixes were needed.
+
+- accept: 3.4 s; clone `work/kilnworks/kiln-bench` has the repo (no answer keys); 4 channels + 6 DMs; setup step `clone` carries the path.
+- start KLN-01; PR #1 lists 13 files; per-file diffs OK; `records.py` head shows the planted line 40.
+- Review: comments on records.py:40 and openloop.py:95 -> found KLN01-1, KLN01-2, recall 0.33, precision 1.0, not passed (as designed). Added metrics.py:28, openloop.py:111, cli.py:91 -> recall 0.83, precision 1.0, passed; quiz unlocked.
+- Quiz: 10 questions (predict_output, mcq, which_test), options sent as strings; answering with option text -> 10/10, passed.
+- Explain: persona Theo; one real Haiku turn in 4.4 s, expression `thinking`, on-topic follow-up.
+- Finish: separate Sonnet grader call in 7.0 s; correctly NOT passed after one turn (1 of 9 rubric points covered). Governor after the run: normal, 5h 0.19, 7d 0.10, resets_at epoch.
+- Change/own stages not run against the real kit here (the reference-fix path is covered on the fixture).
+
+Note for the lead (content's suggestion): precision = matching / all comments, so `praise:` comments lower it. I did not change `review.py`; say if you want `nit`/praise excluded from the denominator.
+
+## Round 3 (2026-10-19) - 60 tests pass
+
+- **`offerletter serve --fake-teammates`**: uses `teammates/demo.py::DemoRunner` (deterministic canned in-character replies per persona, expressions cycling through the seven values via the `[expr:x]` tag, explain grader that marks a rubric point covered when the learner's lines contain one of its key words of 5+ letters; typing delays scaled to 0.15). No Claude calls, no plan usage. `/api/health` reports `teammates: true`.
+- **Portraits** are served as `.webp` (`image/webp`) and `.png`, including `<expr>_talk.webp`, at `/portraits/<company>/<persona>/<name>.<ext>`; other extensions and unsafe names 404.
+- **Review severities** are now `blocker | major | minor | nit | praise`. `praise` and `nit` comments may still match an issue (recall) but are left out of the precision denominator and never count as false flags. Tests added in `tests/test_followup.py`.

@@ -69,7 +69,7 @@ All ids are text. Times are ISO-8601 UTC strings. JSON columns are text.
 | `message` | id, channel_id, author (`player` / persona id / `system`), body_md, thread_root_id, attachments_json, created_at |
 | `ticket` | id (e.g. `KLN-01`), company_id, title, type, level, size_hours, status (`backlog`/`assigned`/`in_progress`/`done`), stage (`review`/`quiz`/`explain`/`change`/`own`/`done`), assignee, kit_path, started_at, done_at |
 | `pull_request` | id (int, per company), company_id, repo, ticket_id, title, author, base, head, description_md, status (`open`/`merged`/`closed`) |
-| `review_comment` | id, pr_id, author, path, line, side (`new`/`old`), body_md, severity (`blocker`/`major`/`minor`/`nit`), parent_id, created_at |
+| `review_comment` | id, pr_id, author, path, line, side (`new`/`old`), body_md, severity (`blocker`/`major`/`minor`/`nit`/`praise`; praise and nit never count against precision), parent_id, created_at |
 | `review_submission` | id, pr_id, verdict (`approve`/`request_changes`/`comment`), body_md, score_json, created_at |
 | `quiz_attempt` | id, ticket_id, answers_json, score_json, created_at |
 | `explain_turn` | id, ticket_id, author, body_md, created_at |

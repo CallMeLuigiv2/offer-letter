@@ -48,7 +48,13 @@ INSERT INTO governor (id, five_hour_util, seven_day_util, resets_at, mode, updat
   VALUES (1, 0, 0, NULL, 'normal', NULL);
 """
 
-MIGRATIONS = [SCHEMA_V1]  # index + 1 = the schema version that migration produces
+SCHEMA_V2 = """
+ALTER TABLE explain_turn ADD COLUMN expression TEXT;
+CREATE TABLE work_session (id TEXT PRIMARY KEY, company_id TEXT, minutes INTEGER, started_at TEXT,
+  standup_channel_id TEXT, thanked INTEGER DEFAULT 0);
+"""
+
+MIGRATIONS = [SCHEMA_V1, SCHEMA_V2]  # index + 1 = the schema version that migration produces
 _IDENT = re.compile(r"^[a-z_]+$")
 
 

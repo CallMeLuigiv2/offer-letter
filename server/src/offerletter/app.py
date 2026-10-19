@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import random
+import re
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -76,6 +77,21 @@ def create_app(settings: Settings, runner: TeammateRunner | None = None, command
         finally:
             bus.unsubscribe(queue)
 
+    portraits_root = (settings.content_dir / "companies").resolve()
+    safe = re.compile(r"^[A-Za-z0-9_-]+$")
+
+    @app.get("/portraits/{company}/{persona}/{expression}.{ext}")
+    async def portrait(company: str, persona: str, expression: str, ext: str) -> FileResponse:
+        """Persona portraits from the content pack; a plain 404 when missing (the web has a placeholder)."""
+        if ext not in ("webp", "png") or not all(safe.match(part) for part in (company, persona, expression)):
+            raise HTTPException(404, "No such portrait.")
+        path = portraits_root / company / "portraits" / persona / f"{expression}.{ext}"
+        if not path.is_file():
+            raise HTTPException(404, "No such portrait.")
+        return FileResponse(path, media_type=f"image/{ext}")
+
+    if settings.office_dir and settings.office_dir.is_dir():
+        app.mount("/office", StaticFiles(directory=settings.office_dir), name="office")
     if settings.web_dist and settings.web_dist.is_dir():
         app.mount("/", StaticFiles(directory=settings.web_dist, html=True), name="web")
     app.state.services = svc

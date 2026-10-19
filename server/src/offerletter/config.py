@@ -18,6 +18,7 @@ class Settings:
     content_dir: Path
     port: int = 8765
     web_dist: Path | None = None
+    office_dir: Path | None = None  # web/public/office, served at /office when running without Vite
     # tools/build_kit.py, used only when it exists and we serve the repo's own content
     build_kit_script: Path | None = None
     # how we run pytest for the hidden grader (Python repos only in v0.1)
@@ -62,5 +63,6 @@ class Settings:
         return cls(
             home=home, content_dir=content_dir, port=port,
             web_dist=dist if dist.is_dir() else None,
+            office_dir=(REPO_ROOT / "web" / "public" / "office") if (REPO_ROOT / "web" / "public" / "office").is_dir() else None,
             build_kit_script=script if use_script else None,
         )
