@@ -86,7 +86,7 @@ async def accept(svc: Services, company_id: str) -> dict[str, Any]:
         raise ApiError(500, f"I couldn't set up the company's repos: {exc}") from exc
 
     employment = db.insert("employment", id=new_id(), player_id=player["id"], company_id=company_id,
-                           role=pack.data.get("role", "Software Engineer"), level="L1", started_at=now(),
+                           role=pack.data.get("role", "Software Engineer I"), level="L1", started_at=now(),
                            status="onboarding")
     _insert_rows(svc, pack, player, first_id)
     ticket = db.get("ticket", first_id) if first_id else None
