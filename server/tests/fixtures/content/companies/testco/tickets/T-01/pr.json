@@ -1,0 +1,7 @@
+{
+  "title": "Add summary report",
+  "author": "peer",
+  "base": "main",
+  "head": "peer/summary-report",
+  "description_md": "Adds report.summarize and speeds up percentile."
+}

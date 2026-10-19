@@ -1,0 +1,18 @@
+{
+  "persona": "peer",
+  "opening_md": "Hey, walk me through what you found in my PR?",
+  "rubric": [
+    {
+      "point": "percentile needs sorted input",
+      "must": true
+    },
+    {
+      "point": "empty list divides by zero",
+      "must": true
+    },
+    {
+      "point": "suggests adding tests",
+      "must": false
+    }
+  ]
+}

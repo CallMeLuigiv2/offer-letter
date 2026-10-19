@@ -1,0 +1,39 @@
+{
+  "id": "testco",
+  "name": "Testco",
+  "pitch": "Tiny fixture company.",
+  "domain": "ai",
+  "stage": "seed",
+  "stage_label": "Seed",
+  "culture": "Ship it.",
+  "stack": [
+    "Python"
+  ],
+  "team_name": "Core",
+  "repos": [
+    {
+      "name": "app",
+      "description": "Stats helpers"
+    }
+  ],
+  "personas": [
+    "lead",
+    "peer"
+  ],
+  "channels": [
+    {
+      "name": "core-team",
+      "topic": "Core team chat"
+    },
+    {
+      "name": "random",
+      "topic": "Anything"
+    }
+  ],
+  "first_ticket": {
+    "id": "T-01",
+    "title": "Fix the summary report"
+  },
+  "ticket_count": 1,
+  "kit_ready": true
+}

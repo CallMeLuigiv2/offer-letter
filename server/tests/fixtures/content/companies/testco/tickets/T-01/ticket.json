@@ -1,0 +1,28 @@
+{
+  "id": "T-01",
+  "title": "Fix the summary report",
+  "type": "review-to-own",
+  "level": "L1",
+  "size_hours": 3,
+  "repo": "app",
+  "skills": [
+    "python"
+  ],
+  "pass_bars": {
+    "review": {
+      "recall": 0.6,
+      "precision": 0.5
+    },
+    "quiz": {
+      "score": 0.8
+    }
+  },
+  "stages": [
+    "review",
+    "quiz",
+    "explain",
+    "change",
+    "own"
+  ],
+  "brief_md": "Review Sam's PR before it merges."
+}

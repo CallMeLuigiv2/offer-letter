@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "companies": [
+    {
+      "id": "testco",
+      "name": "Testco",
+      "domain": "ai",
+      "stage": "seed",
+      "stage_label": "Seed",
+      "pitch": "Old pitch",
+      "culture": "Ship it.",
+      "stack": [
+        "Python"
+      ],
+      "ticket_count": 1,
+      "first_ticket": {
+        "id": "T-01",
+        "title": "x"
+      },
+      "kit_ready": false
+    },
+    {
+      "id": "otherco",
+      "name": "Otherco",
+      "domain": "backend",
+      "stage": "growth",
+      "stage_label": "Growth",
+      "pitch": "Not ready",
+      "culture": "Slow.",
+      "stack": [
+        "Go"
+      ],
+      "ticket_count": 8,
+      "first_ticket": {
+        "id": "O1",
+        "title": "y"
+      },
+      "kit_ready": false
+    }
+  ]
+}

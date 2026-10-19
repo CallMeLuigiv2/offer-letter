@@ -1,0 +1,6 @@
+{
+  "from_persona": "lead",
+  "request_md": "Make percentile sort again and guard empty input.",
+  "branch_hint": "fix/summary",
+  "grader_dir": "grader"
+}

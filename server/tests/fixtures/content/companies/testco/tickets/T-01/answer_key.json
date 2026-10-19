@@ -1,0 +1,33 @@
+{
+  "issues": [
+    {
+      "id": "I1",
+      "title": "percentile no longer sorts its input",
+      "path": "stats.py",
+      "line_start": 5,
+      "line_end": 8,
+      "category": "correctness",
+      "severity": "blocker",
+      "explanation_md": "Callers do not pass sorted data, so the percentile is wrong.",
+      "hint_md": "Look at percentile."
+    },
+    {
+      "id": "I2",
+      "title": "summarize crashes on an empty list",
+      "path": "report.py",
+      "line_start": 6,
+      "line_end": 6,
+      "category": "edge-case",
+      "severity": "major",
+      "explanation_md": "mean() divides by len(values) which is zero.",
+      "hint_md": "What if no requests?"
+    }
+  ],
+  "decoys": [
+    {
+      "path": "report.py",
+      "line": 12,
+      "why_not_a_bug": "The f-string formatting is correct."
+    }
+  ]
+}
