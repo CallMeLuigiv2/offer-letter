@@ -1,0 +1,60 @@
+{
+  "persona": "theo",
+  "opening_md": "Hey! Kenji wants me to hear this from you before I go on the release-gate rota, so here I am. Honest question: I switched to an open loop and p99.9 showed the pause. Why was my version still lying? Walk me through it like I'm the one who gets paged when the gate goes red.",
+  "rubric": [
+    {
+      "point": "Why a closed loop hides stalls: each worker waits for its response before sending again, so while the server is stalled the generator stops sending, and the stall lands on only the few requests already in flight. Users would have kept arriving (coordinated omission).",
+      "must": true
+    },
+    {
+      "point": "Intended versus actual send time: in an open loop, latency has to start at the scheduled send time. Measured from the actual send, any wait inside the generator (a full in-flight cap, a busy event loop) disappears. And the schedule must keep its times: blocking on the cap and restarting the schedule from now means the sends that were due are never made.",
+      "must": true
+    },
+    {
+      "point": "How the percentile is computed: nearest rank is ceil(q/100 × n). The PR's int() rounds down, so whenever q/100 × n is not a whole number it returns one rank too low, which on small runs drops the slow request out of p99. Round sample sizes like 100 and 1000 hide it.",
+      "must": true
+    },
+    {
+      "point": "What happens to failed and timed-out requests: they have to be recorded and counted as errors, not dropped. The ones that time out are the slowest of all, so removing them flatters the tail just when it matters most (survivorship bias).",
+      "must": true
+    },
+    {
+      "point": "Durations need a monotonic clock (perf_counter). time.time can be stepped or slewed by NTP, and on Windows before Python 3.13 it moves in 15.6 ms ticks.",
+      "must": false
+    },
+    {
+      "point": "What a late send is and why --max-in-flight warns: time spent queueing inside kiln-bench is latency a user would feel, and the report should say when the generator fell behind.",
+      "must": false
+    },
+    {
+      "point": "Which parts of the PR were right: expovariate(rate) gives a mean gap of 1/rate, and waiting for in-flight requests after the schedule ends keeps the slowest ones in the report.",
+      "must": false
+    },
+    {
+      "point": "How many samples a p99.9 needs (decision 0003), and that the report should show the sample count next to it.",
+      "must": false
+    },
+    {
+      "point": "Which test catches which bug: an awkward sample size for the percentile, a run through a pause for the open loop, a stall past the timeout for dropped failures.",
+      "must": false
+    }
+  ],
+  "probes": [
+    {"ask_md": "If we just run longer, won't the closed loop's p99 catch the pause eventually?", "planted_wrong": true,
+     "why_md": "No. With periodic pauses, the share of samples that see a pause stays about the same however long you run, because the workers stop sending during every pause. A longer run gives the same wrong answer with more confidence."},
+    {"ask_md": "Couldn't we keep the cap at 4 and just measure from intended_at?", "planted_wrong": false,
+     "why_md": "Half right. Measuring from intended_at stops the wait from vanishing, but with a cap of 4 most of that wait is kiln-bench queueing, not the server. You want a cap high enough that it's rarely hit, plus a late-sends count and a warning for when it is."},
+    {"ask_md": "time.time and perf_counter are basically the same thing on Linux, right?", "planted_wrong": true,
+     "why_md": "No. time.time is the wall clock and NTP can step or slew it. perf_counter is monotonic. They can agree for hours and then disagree by a second in the middle of a release-gate run."},
+    {"ask_md": "Why not retry timeouts instead of counting them? Then the numbers are clean.", "planted_wrong": false,
+     "why_md": "A retry hides the failure the customer saw. If you retry, report both: the failure and the retry's latency."},
+    {"ask_md": "Did I get expovariate upside down? I half expected someone to flag it.", "planted_wrong": false,
+     "why_md": "It's right: expovariate takes the rate, so expovariate(40) averages 25 ms gaps."},
+    {"ask_md": "The run overshoots --duration because we wait for in-flight requests at the end. Should we cut them off?", "planted_wrong": false,
+     "why_md": "No. They were sent inside the window; cutting them off would drop the slowest ones. Overshooting by one request's latency is fine."},
+    {"ask_md": "Is p99.9 even meaningful from a 10 s local run?", "planted_wrong": false,
+     "why_md": "Barely. With a few hundred samples it's close to the max (decision 0003). Show the sample count next to it, and gate on it only for long runs."},
+    {"ask_md": "If the gate goes red at 3 a.m., what's the first thing you'd look at?", "planted_wrong": false,
+     "why_md": "Whether the generator kept up: late sends, the request count against the schedule, errors by kind. Only then the latency numbers."}
+  ]
+}

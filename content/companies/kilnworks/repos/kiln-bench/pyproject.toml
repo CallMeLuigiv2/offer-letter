@@ -1,0 +1,35 @@
+[project]
+name = "kiln-bench"
+version = "0.4.0"
+description = "Load generator and latency reports for OpenAI-compatible streaming endpoints."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+authors = [{ name = "Kilnworks Serving team" }]
+dependencies = [
+    "httpx==0.28.1",
+]
+
+[project.scripts]
+kiln-bench = "kiln_bench.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest==8.4.2",
+]
+
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kiln_bench"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.uv]
+# Resolve as if it were 2026-10-01 so a fresh lock never picks up a release
+# that is only a few days old.
+exclude-newer = "2026-10-01T00:00:00Z"

@@ -1,0 +1,129 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "kind": "predict_output",
+      "prompt_md": "On Theo's branch, what does this print? Type it exactly as Python would.",
+      "code": "from kiln_bench.metrics import percentile\n\nxs = [12, 15, 11, 14, 13, 2050, 16, 12, 15, 14]\nprint(percentile(sorted(xs), 99))",
+      "answer": "16.0",
+      "explanation_md": "`rank = int(99 / 100 * 10) = int(9.9) = 9`, and the function returns `sorted_values[8]`, the 9th value: 16. Nearest rank needs `ceil(9.9) = 10`, the 10th value: the 2,050 ms request. With 10 samples the floor drops the only slow request out of the p99.",
+      "verify": {"cmd": ["uv", "run", "--frozen", "python", "{kit}/quiz_checks/q01_percentile_of_ten.py"], "ref": "head", "expect": "16.0"}
+    },
+    {
+      "id": "q2",
+      "kind": "mcq",
+      "prompt_md": "`test_percentiles_are_nearest_rank` (n = 100) and `test_p99_9_with_a_thousand_samples` (n = 1000) both pass on Theo's branch. Why don't they catch the percentile bug?",
+      "options": [
+        "For n = 100 and n = 1000, q/100 × n is a whole number, so rounding down and rounding up give the same rank",
+        "The tests sort the input first, which hides the bug",
+        "pytest compares floats loosely, so an off-by-one value still passes",
+        "The bug only shows up with more than 1000 samples"
+      ],
+      "answer": "For n = 100 and n = 1000, q/100 × n is a whole number, so rounding down and rounding up give the same rank",
+      "explanation_md": "99% of 100 is exactly 99, so `int()` and `ceil()` agree. The bug needs a sample size where q/100 × n has a fractional part, like 10 or 37 (decision 0003 says exactly this). Tests for rank arithmetic need awkward sizes, not round ones."
+    },
+    {
+      "id": "q3",
+      "kind": "mcq",
+      "prompt_md": "Theo's \"after\" run used `--rate 40 --duration 20`, which should send about 800 requests. The report counts 669. Where did the rest go?",
+      "options": [
+        "They were never sent: while the loop waited for a free slot, the schedule restarted from \"now\"",
+        "They were sent but timed out, and timeouts are dropped from the results",
+        "Poisson arrivals send fewer than rate × duration requests on average",
+        "The fake server answered them with HTTP 503"
+      ],
+      "answer": "They were never sent: while the loop waited for a free slot, the schedule restarted from \"now\"",
+      "explanation_md": "The fake server sees exactly as many requests as the report counts, so nothing was sent and then lost. The schedule loop awaits `self._slots.acquire()`, and with the cap at `--concurrency` (4) it blocks whenever four requests are in flight. Then `next_at = self.clock() + gap` restarts the schedule from the current time, and the sends that were due in the meantime are gone. Poisson arrivals average `rate` per second, so that isn't it.",
+      "verify": {"cmd": ["uv", "run", "--frozen", "python", "{kit}/quiz_checks/q03_missing_requests.py"], "ref": "head", "expect": "They were never sent: while the loop waited for a free slot, the schedule restarted from \"now\""}
+    },
+    {
+      "id": "q4",
+      "kind": "mcq",
+      "prompt_md": "Same run: the engine pauses for 1 s every 20 s, so about 5% of the scheduled requests arrive during a pause and wait for it to end. What does the PR report as p99 TTFT, and what should it be?",
+      "options": [
+        "About 30 ms reported; it should be about 800 ms",
+        "About 1,000 ms reported, which is right",
+        "About 30 ms reported, which is right because the pause shows up in p99.9",
+        "About 500 ms reported; it should be about 1,000 ms"
+      ],
+      "answer": "About 30 ms reported; it should be about 800 ms",
+      "explanation_md": "If 5% of arrivals wait somewhere between 0 and 1 s, the slowest 1% are the top fifth of that band: p99 is about 0.8 s plus prefill. The PR reports about 30 ms because the requests that should have arrived during the pause were never sent (q3), and the few that did go out are measured from when they left. A p99.9 that shows the pause is not proof the tool works: with 5% of users waiting, it belongs in p99.",
+      "verify": {"cmd": ["uv", "run", "--frozen", "python", "{kit}/quiz_checks/q04_reported_p99.py"], "ref": "head", "expect": "About 30 ms reported; it should be about 800 ms"}
+    },
+    {
+      "id": "q5",
+      "kind": "mcq",
+      "prompt_md": "On Theo's branch, a request is scheduled for t = 0, waits 300 ms for a free slot, and gets its first token 20 ms after it goes out. What TTFT does its record report?",
+      "code": "rec = RequestRecord(id=0, intended_at=0.0, sent_at=0.300, first_token_at=0.320)\nrec.ttft_s",
+      "options": ["20 ms", "300 ms", "320 ms", "280 ms"],
+      "answer": "20 ms",
+      "explanation_md": "`ttft_s` is `first_token_at - sent_at`. The 300 ms the request spent waiting to go out is not counted, even though the user would have waited 320 ms. Measured from `intended_at`, it is 320 ms.",
+      "verify": {"cmd": ["uv", "run", "--frozen", "python", "{kit}/quiz_checks/q05_ttft_after_waiting.py"], "ref": "head", "expect": "20 ms"}
+    },
+    {
+      "id": "q6",
+      "kind": "mcq",
+      "prompt_md": "On Theo's branch, the fake server stalls every 5th request for 3 s, and you run `kiln-bench run --rate 10 --arrival constant --duration 2 --timeout 1`. What does the summary say about the stalled requests?",
+      "options": [
+        "They are missing: errors is 0 and the request count is lower",
+        "They are counted in errors as timeouts",
+        "They are in the latency percentiles at about 1,000 ms",
+        "The run stops with a TimeoutError"
+      ],
+      "answer": "They are missing: errors is 0 and the request count is lower",
+      "explanation_md": "`_fire` catches `TimeoutError` and `httpx.HTTPError`, logs at debug level and returns before appending the record. The slowest requests vanish and the error count stays at zero. The closed-loop runner records the error and keeps the record.",
+      "verify": {"cmd": ["uv", "run", "--frozen", "python", "{kit}/quiz_checks/q06_timeouts.py"], "ref": "head", "expect": "They are missing: errors is 0 and the request count is lower"}
+    },
+    {
+      "id": "q7",
+      "kind": "mcq",
+      "prompt_md": "`PoissonArrivals.next_gap()` returns `self.rng.expovariate(self.rate)`. With `rate = 40`, what is the average gap between sends?",
+      "options": ["25 ms", "40 ms", "40 s", "1 s"],
+      "answer": "25 ms",
+      "explanation_md": "`random.expovariate(lambd)` takes the rate, 1 / mean. A rate of 40 per second gives a mean gap of 1/40 s = 25 ms. This line looks suspicious and is correct; flagging it in review would have been a false alarm.",
+      "verify": {"cmd": ["uv", "run", "--frozen", "python", "{kit}/quiz_checks/q07_expovariate_mean.py"], "ref": "head", "expect": "25 ms"}
+    },
+    {
+      "id": "q8",
+      "kind": "which_test",
+      "prompt_md": "Which of these tests fails on Theo's branch, and so would have caught the percentile bug?",
+      "options": [
+        "percentiles(range(1, 101)) has p99 == 99",
+        "10 latencies with one 2,050 ms outlier: p99 == 2050",
+        "percentiles([42.0]) is 42 for every key",
+        "percentiles([3, 1, 2]) equals percentiles([1, 2, 3])"
+      ],
+      "answer": "10 latencies with one 2,050 ms outlier: p99 == 2050",
+      "explanation_md": "Only a sample size where q/100 × n is not a whole number separates floor from ceil. With 10 values, 99% of 10 is 9.9: the correct rank is 10 (the outlier), the PR's is 9.",
+      "verify": {"cmd": ["uv", "run", "--frozen", "python", "{kit}/quiz_checks/q08_which_test_percentile.py"], "ref": "head", "expect": "10 latencies with one 2,050 ms outlier: p99 == 2050"}
+    },
+    {
+      "id": "q9",
+      "kind": "which_test",
+      "prompt_md": "The PR's main claim is \"stalls now show up in the tail\". Which test would check that claim, and fails on Theo's branch?",
+      "options": [
+        "Constant 50/s for 1 s against a healthy server: between 40 and 60 records",
+        "Constant 50/s for 2 s through a 0.5 s engine pause: exactly 100 records and p90 TTFT above 200 ms",
+        "Poisson gaps average 1/rate over 20,000 samples",
+        "max_in_flight=0 raises ValueError"
+      ],
+      "answer": "Constant 50/s for 2 s through a 0.5 s engine pause: exactly 100 records and p90 TTFT above 200 ms",
+      "explanation_md": "A quarter of the arrivals land in the pause, so a truthful generator sends all 100 and shows hundreds of ms at p90. The PR sends fewer and reports a fast p90. The other three tests pass on the PR, and none of them involves a stall.",
+      "verify": {"cmd": ["uv", "run", "--frozen", "python", "{kit}/quiz_checks/q09_which_test_stall.py"], "ref": "head", "expect": "Constant 50/s for 2 s through a 0.5 s engine pause: exactly 100 records and p90 TTFT above 200 ms"}
+    },
+    {
+      "id": "q10",
+      "kind": "mcq",
+      "prompt_md": "Back on main: 4 closed-loop workers, an 11 s run, one 1 s engine pause in the middle. Why does p99 TTFT stay under 100 ms?",
+      "options": [
+        "The workers stop sending while the server is paused, so only the requests already in flight see it",
+        "The fake server only pauses streams that have already started",
+        "p99 ignores the slowest 1% of requests, so a pause can never show up in it",
+        "The closed loop retries slow requests and keeps the fast retry"
+      ],
+      "answer": "The workers stop sending while the server is paused, so only the requests already in flight see it",
+      "explanation_md": "Each worker waits for its response before sending again, so during the pause at most 4 requests exist, out of about 500 in the run. Users arriving during that second would all have waited; the benchmark sent none of them. That is coordinated omission, and decision 0001 names it as a known limit.",
+      "verify": {"cmd": ["uv", "run", "--frozen", "python", "{kit}/quiz_checks/q10_closed_loop_pause.py"], "ref": "base", "expect": "The workers stop sending while the server is paused, so only the requests already in flight see it"}
+    }
+  ]
+}

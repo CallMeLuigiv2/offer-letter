@@ -1,0 +1,108 @@
+{
+  "issues": [
+    {
+      "id": "KLN01-1",
+      "title": "Latency is measured from the actual send, not the scheduled send",
+      "path": "src/kiln_bench/records.py",
+      "line_start": 38,
+      "line_end": 46,
+      "category": "measurement",
+      "severity": "blocker",
+      "explanation_md": "`ttft_s` and `e2e_s` subtract `sent_at`, the moment the request was handed to httpx. The PR adds `intended_at` and its description says latency \"now includes any time a request spent waiting to go out\", but nothing reads `intended_at`. When the generator falls behind (a full in-flight cap, a busy event loop), a request can leave hundreds of ms late, and that wait is exactly what a user would have felt. Measured from `sent_at`, it vanishes. Open-loop tools such as wrk2 measure from the intended send time for this reason. Fix: measure from `intended_at` when it is set, and fall back to `sent_at` for closed-loop runs.",
+      "hint_md": "The PR description makes a claim about what latency includes. Find the two lines that compute latency and check whether they keep that promise."
+    },
+    {
+      "id": "KLN01-2",
+      "title": "At the in-flight cap the dispatcher blocks and re-anchors the schedule, so it is closed-loop again",
+      "path": "src/kiln_bench/openloop.py",
+      "line_start": 93,
+      "line_end": 98,
+      "category": "concurrency",
+      "severity": "blocker",
+      "explanation_md": "The schedule loop awaits `self._slots.acquire()` before it creates the task. When all slots are busy (a pause, or just a slow server with the default cap of 4 from `--concurrency`) the whole schedule stops. Then `next_at = self.clock() + gap` restarts the schedule from *now*, so every send that was due while it was blocked is never sent and never counted. That is coordinated omission again, now hidden one level down: on the INC-2291 repro at `--rate 40` the PR sends about 670 of 800 requests and reports p99 TTFT about 30 ms, while about 5% of arrivals land in a 1 s pause (true p99 is about 800 ms). Fix: never block the schedule. Create the task on time, let the task wait for a slot, step the schedule with `next_at += gap`, and count requests that left late. The low default cap (`max_in_flight=args.concurrency` in cli.py) makes it trigger at ordinary rates.",
+      "hint_md": "Run `--rate 40 --duration 20` against the pause repro and compare the request count with 40 × 20. Then read the schedule loop line by line and ask what happens while `acquire()` waits."
+    },
+    {
+      "id": "KLN01-3",
+      "title": "Nearest-rank percentile truncates the rank (floor instead of ceil)",
+      "path": "src/kiln_bench/metrics.py",
+      "line_start": 28,
+      "line_end": 29,
+      "category": "statistics",
+      "severity": "major",
+      "explanation_md": "Nearest rank is `ceil(q/100 × n)`. `int()` rounds down, so whenever `q/100 × n` is not a whole number the function returns the value one rank too low. For 10 requests with one 2 s stall, p99 should be the stall (rank ceil(9.9) = 10) but the code returns the 9th value, about 16 ms. It is exactly the small-sample tail that disappears. The tests only use n = 100 and n = 1000, where `q/100 × n` is a whole number and floor and ceil agree, so they cannot catch it. Decision 0003 warned about this (\"right for n = 100 and wrong for n = 37\"). Fix: `ceil`, with care for float noise (`99.9 * 1000 / 100` is `999.0000000000001`), and a test with a sample size that is not round.",
+      "hint_md": "Compute the PR's p99 by hand for 10 values where one is huge. Then do it for 100 values. Why do the tests pass?"
+    },
+    {
+      "id": "KLN01-4",
+      "title": "Failed and timed-out requests are dropped from the results",
+      "path": "src/kiln_bench/openloop.py",
+      "line_start": 110,
+      "line_end": 112,
+      "category": "error-handling",
+      "severity": "major",
+      "explanation_md": "On a timeout or an HTTP error, `_fire` logs at debug level and returns before `self.records.append(rec)`. The request disappears: `errors` stays 0, the request count shrinks, and the slowest requests (the ones that timed out) leave the tail. That is survivorship bias, the thing decision 0003 says never to do. The closed-loop runner gets this right: it records the error on the record and keeps it. Fix: record the failure (`rec.error`, `rec.done_at`) and always append.",
+      "hint_md": "Compare what `ClosedLoopRunner._one` does with a timeout and what `OpenLoopRunner._fire` does. Then run with `--stall-every 5 --stall-for 3` on the server and `--timeout 1`, and look at the errors line."
+    },
+    {
+      "id": "KLN01-5",
+      "title": "Durations come from the wall clock (time.time)",
+      "path": "src/kiln_bench/cli.py",
+      "line_start": 91,
+      "line_end": 92,
+      "category": "timing",
+      "severity": "major",
+      "explanation_md": "`RunClock(time.time)` makes every duration a difference of wall-clock readings. The wall clock is adjustable: NTP can step or slew it mid-run, which yields negative or inflated latencies. On Windows before Python 3.13 it also only advances every 15.6 ms unless something raised the timer resolution. `perf_counter` is monotonic and high resolution, which is why `RunClock` defaults to it and why CONTRIBUTING and decision 0004 say durations never come from `time.time()`. The stated reason (lining up with gateway logs) does not hold either: records store offsets from the run start, so nothing lines up anyway. Fix: keep `RunClock()`; if you want to correlate with logs, record one wall-clock timestamp for the start of the run.",
+      "hint_md": "Read `timing.RunClock` and decision 0004, then read the comment above this line. Does the reason given actually work?"
+    },
+    {
+      "id": "KLN01-6",
+      "title": "No test runs the open loop against a stall, so the PR's main claim is untested",
+      "path": "tests/test_openloop.py",
+      "line_start": 20,
+      "line_end": 24,
+      "category": "test-gap",
+      "severity": "major",
+      "explanation_md": "The PR exists to make stalls visible, but every open-loop test runs against a healthy fake server with a 2 ms prefill. The schedule test even accepts 40 to 60 requests for a 50-request schedule, wide enough to hide dropped sends. The fake server already has `pause_every_s`/`pause_s` (Theo added them a week earlier), so the missing test is cheap: a constant-rate run through a pause that asserts the request count is exact and that p90/p99 TTFT reflect the pause. Together with the round-number percentile tests, the suite is green while the generator still hides the stall.",
+      "hint_md": "List what each new test would catch. Which of the PR's claims has no test at all?"
+    }
+  ],
+  "decoys": [
+    {
+      "path": "src/kiln_bench/openloop.py",
+      "line": 34,
+      "why_not_a_bug": "`random.expovariate(lambd)` takes the rate (1 / mean), not the mean. `expovariate(40)` gives gaps that average 25 ms, which is 40 requests/s. `test_poisson_gaps_average_one_over_rate` checks exactly this."
+    },
+    {
+      "path": "src/kiln_bench/openloop.py",
+      "line": 102,
+      "why_not_a_bug": "Waiting for the requests still in flight after the schedule ends is correct. They were sent inside the run window, so their latency belongs in the report. Cancelling them at the deadline would drop exactly the slowest requests, the ones stuck in a pause."
+    }
+  ],
+  "also_valid": [
+    {
+      "path": "src/kiln_bench/cli.py",
+      "line_start": 112,
+      "line_end": 112,
+      "note": "Using --concurrency (default 4) as the in-flight cap makes the generator saturate at ordinary rates. Part of KLN01-2."
+    },
+    {
+      "path": "src/kiln_bench/metrics.py",
+      "line_start": 12,
+      "line_end": 12,
+      "note": "p99.9 from a few hundred samples is close to the max (decision 0003). Reporting the sample count next to it is a fair ask."
+    },
+    {
+      "path": "src/kiln_bench/openloop.py",
+      "line_start": 31,
+      "line_end": 31,
+      "note": "PoissonArrivals defaults to an unseeded RNG, so runs that don't pass one aren't repeatable. The CLI seeds it, so it's a nit."
+    },
+    {
+      "path": "docs/decisions/0005-open-loop-arrivals.md",
+      "line_start": 20,
+      "line_end": 22,
+      "note": "The decision note repeats the claim that latency includes the wait to go out. Part of KLN01-1."
+    }
+  ]
+}

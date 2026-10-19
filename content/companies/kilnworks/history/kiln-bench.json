@@ -1,0 +1,383 @@
+[
+  {
+    "author": "kenji",
+    "date": "2026-07-20T10:12:00-07:00",
+    "message": "repo: start kiln-bench (uv project, src layout, CI)\n\nA load generator for our OpenAI-compatible endpoints, so capacity numbers\nstop coming from one-off notebooks. Python 3.12 + httpx, nothing else.",
+    "paths": [
+      ".gitignore",
+      ".gitattributes",
+      ".python-version",
+      {
+        "path": "pyproject.toml",
+        "edits": [
+          "v0.1.0"
+        ]
+      },
+      "uv.lock",
+      {
+        "path": "src/kiln_bench/__init__.py",
+        "edits": [
+          "v0.1.0"
+        ]
+      },
+      "src/kiln_bench/__main__.py",
+      {
+        "path": "README.md",
+        "edits": [
+          "no_windows",
+          "no_pause_row",
+          "no_owner",
+          "no_rate"
+        ]
+      },
+      {
+        "path": ".github/workflows/ci.yml",
+        "edits": [
+          "no_smoke"
+        ]
+      }
+    ]
+  },
+  {
+    "author": "kenji",
+    "date": "2026-07-21T15:40:00-07:00",
+    "message": "sse: parse data events from OpenAI-style streams",
+    "paths": [
+      "src/kiln_bench/sse.py",
+      {
+        "path": "tests/test_sse.py",
+        "edits": [
+          "pre_leo"
+        ]
+      }
+    ]
+  },
+  {
+    "author": "kenji",
+    "date": "2026-07-22T11:05:00-07:00",
+    "message": "client: stream chat completions and timestamp every chunk",
+    "paths": [
+      "src/kiln_bench/timing.py",
+      {
+        "path": "src/kiln_bench/records.py",
+        "edits": [
+          "pre_0002"
+        ]
+      },
+      {
+        "path": "src/kiln_bench/client.py",
+        "edits": [
+          "pre_0002"
+        ]
+      },
+      "tests/test_records.py"
+    ]
+  },
+  {
+    "author": "kenji",
+    "date": "2026-07-22T16:31:00-07:00",
+    "message": "loadgen: closed-loop workers (decision 0001)\n\nN workers, each sends, reads the stream, sends again. This answers the\ncapacity question for Q3 (streams per H100 before TTFT > 500 ms).",
+    "paths": [
+      {
+        "path": "src/kiln_bench/loadgen.py",
+        "edits": [
+          "no_rate"
+        ]
+      },
+      "src/kiln_bench/prompts.py",
+      "docs/decisions/0001-closed-loop-workers.md"
+    ]
+  },
+  {
+    "author": "kenji",
+    "date": "2026-07-24T13:15:00-07:00",
+    "message": "fake_server: stdlib SSE server that streams like kiln-gateway\n\nHeaders and an empty role delta on admission, tokens after prefill.\n--stall-every and --fail-every for the unhappy paths.",
+    "paths": [
+      {
+        "path": "src/kiln_bench/fake_server.py",
+        "edits": [
+          "pre_pause",
+          "pre_leo"
+        ]
+      },
+      "tests/helpers.py",
+      {
+        "path": "tests/test_fake_server.py",
+        "edits": [
+          "pre_leo",
+          "pre_pause",
+          "pre_0002"
+        ]
+      },
+      {
+        "path": "tests/test_client.py",
+        "edits": [
+          "pre_0002",
+          "pre_leo"
+        ]
+      }
+    ]
+  },
+  {
+    "author": "kenji",
+    "date": "2026-07-27T09:48:00-07:00",
+    "message": "cli: kiln-bench run / report / fake-server",
+    "paths": [
+      {
+        "path": "src/kiln_bench/metrics.py",
+        "edits": [
+          "pre_0003"
+        ]
+      },
+      {
+        "path": "src/kiln_bench/report.py",
+        "edits": [
+          "pre_kinds"
+        ]
+      },
+      {
+        "path": "src/kiln_bench/cli.py",
+        "edits": [
+          "no_rate",
+          "pre_hint",
+          "pre_leo"
+        ]
+      },
+      {
+        "path": "tests/conftest.py",
+        "edits": [
+          "pre_leo"
+        ]
+      },
+      {
+        "path": "tests/test_cli.py",
+        "edits": [
+          "pre_hint"
+        ]
+      },
+      {
+        "path": "tests/test_metrics.py",
+        "edits": [
+          "pre_0003"
+        ]
+      },
+      {
+        "path": "tests/test_report.py",
+        "edits": [
+          "pre_kinds"
+        ]
+      },
+      {
+        "path": "tests/test_loadgen.py",
+        "edits": [
+          "no_rate",
+          "pre_leo"
+        ]
+      }
+    ]
+  },
+  {
+    "author": "ines",
+    "date": "2026-07-29T18:20:00+01:00",
+    "message": "docs: CONTRIBUTING: PR template, review labels, measurement notes",
+    "paths": [
+      "CONTRIBUTING.md"
+    ]
+  },
+  {
+    "author": "theo",
+    "date": "2026-08-04T17:02:00+02:00",
+    "message": "loadgen: --rate paces the closed-loop workers\n\nEach worker sleeps so N workers together aim at --rate. Approximate, as\n0001 says; good enough for the dashboards Amara asked for.",
+    "paths": [
+      "src/kiln_bench/loadgen.py",
+      {
+        "path": "src/kiln_bench/cli.py",
+        "edits": [
+          "pre_hint",
+          "pre_leo"
+        ]
+      },
+      {
+        "path": "tests/test_loadgen.py",
+        "edits": [
+          "pre_leo"
+        ]
+      },
+      {
+        "path": "README.md",
+        "edits": [
+          "no_windows",
+          "no_pause_row",
+          "no_owner"
+        ]
+      }
+    ]
+  },
+  {
+    "author": "ines",
+    "date": "2026-08-05T11:37:00+01:00",
+    "message": "client: TTFT stops at the first content token (decision 0002)\n\nThe gateway flushes an empty role delta on admission, so TTFT was\nmeasuring admission (2-5 ms). Our p50 was 20x better than the engine's.",
+    "paths": [
+      "src/kiln_bench/client.py",
+      "src/kiln_bench/records.py",
+      {
+        "path": "tests/test_client.py",
+        "edits": [
+          "pre_leo"
+        ]
+      },
+      {
+        "path": "tests/test_fake_server.py",
+        "edits": [
+          "pre_leo",
+          "pre_pause"
+        ]
+      },
+      "docs/decisions/0002-ttft-is-first-content-token.md"
+    ]
+  },
+  {
+    "author": "ines",
+    "date": "2026-08-12T14:05:00+01:00",
+    "message": "metrics: interpolated percentiles, same as numpy (decision 0003)\n\nThe index version returned the max for p99 below 100 samples and\ndisagreed with every notebook.",
+    "paths": [
+      "src/kiln_bench/metrics.py",
+      "tests/test_metrics.py",
+      "docs/decisions/0003-percentiles.md"
+    ]
+  },
+  {
+    "author": "kenji",
+    "date": "2026-08-13T09:30:00-07:00",
+    "message": "release: 0.2.0",
+    "paths": [
+      {
+        "path": "pyproject.toml",
+        "edits": [
+          "v0.2.0"
+        ]
+      },
+      {
+        "path": "src/kiln_bench/__init__.py",
+        "edits": [
+          "v0.2.0"
+        ]
+      }
+    ]
+  },
+  {
+    "author": "dana",
+    "date": "2026-08-19T12:44:00-04:00",
+    "message": "docs: README: owner, where to ask, no unannounced prod load",
+    "paths": [
+      {
+        "path": "README.md",
+        "edits": [
+          "no_windows",
+          "no_pause_row"
+        ]
+      }
+    ]
+  },
+  {
+    "author": "theo",
+    "date": "2026-08-21T16:18:00+02:00",
+    "message": "report: break errors down by kind",
+    "paths": [
+      "src/kiln_bench/report.py",
+      "tests/test_report.py"
+    ]
+  },
+  {
+    "author": "theo",
+    "date": "2026-08-28T10:51:00+02:00",
+    "message": "ci: smoke run against the fake server",
+    "paths": [
+      ".github/workflows/ci.yml"
+    ]
+  },
+  {
+    "author": "ines",
+    "date": "2026-09-03T15:12:00+01:00",
+    "message": "cli: say what to do when every request fails",
+    "paths": [
+      {
+        "path": "src/kiln_bench/cli.py",
+        "edits": [
+          "pre_leo"
+        ]
+      },
+      "tests/test_cli.py"
+    ]
+  },
+  {
+    "author": "kenji",
+    "date": "2026-09-09T09:02:00-07:00",
+    "message": "release: 0.3.0",
+    "paths": [
+      {
+        "path": "pyproject.toml",
+        "edits": [
+          "v0.3.0"
+        ]
+      },
+      {
+        "path": "src/kiln_bench/__init__.py",
+        "edits": [
+          "v0.3.0"
+        ]
+      }
+    ]
+  },
+  {
+    "author": "theo",
+    "date": "2026-10-09T13:26:00+02:00",
+    "message": "fake_server: engine pauses to reproduce INC-2291\n\n--pause-every S --pause-for P stops the whole engine for P seconds every\nS seconds: streams freeze and new requests wait, like the 1 s engine\npauses in INC-2291. Closed-loop p99 barely moves with them on. See the\nthread in #incidents; open-loop PR coming.",
+    "paths": [
+      {
+        "path": "src/kiln_bench/fake_server.py",
+        "edits": [
+          "pre_leo"
+        ]
+      },
+      {
+        "path": "tests/test_fake_server.py",
+        "edits": [
+          "pre_leo"
+        ]
+      },
+      {
+        "path": "README.md",
+        "edits": [
+          "no_windows"
+        ]
+      }
+    ]
+  },
+  {
+    "author": "leo",
+    "date": "2026-10-13T17:45:00-07:00",
+    "message": "platform: precise asyncio timers on Windows (decision 0004)\n\nOn Windows + Python 3.12 the fake server's 8 ms token gaps came out as\n0 ms under load: asyncio's clock ticks every 15.6 ms there. _platform.run()\nraises the timer resolution and keeps loop time with perf_counter.\nTests and the CLI use it now. Thanks Ines for the review!",
+    "paths": [
+      "src/kiln_bench/_platform.py",
+      "src/kiln_bench/cli.py",
+      "src/kiln_bench/fake_server.py",
+      "tests/conftest.py",
+      "tests/test_sse.py",
+      "tests/test_client.py",
+      "tests/test_fake_server.py",
+      "tests/test_loadgen.py",
+      "docs/decisions/0004-windows-timers.md",
+      "README.md"
+    ]
+  },
+  {
+    "author": "kenji",
+    "date": "2026-10-14T10:10:00-07:00",
+    "message": "release: 0.4.0",
+    "paths": [
+      "pyproject.toml",
+      "src/kiln_bench/__init__.py"
+    ]
+  }
+]

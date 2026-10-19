@@ -1,0 +1,41 @@
+{
+  "title": "Switch --rate to open-loop arrivals and add p99.9",
+  "author": "theo",
+  "base": "main",
+  "head": "theo/open-loop-arrivals",
+  "date": "2026-10-16T10:40:00+02:00",
+  "commits": [
+    {
+      "message": "loadgen: open-loop runner with Poisson and constant arrivals\n\nRequests go out on a schedule instead of when the previous response\ncomes back. Records keep intended_at next to sent_at (renamed from\nstart).",
+      "date": "2026-10-15T11:20:00+02:00",
+      "paths": [
+        "src/kiln_bench/openloop.py",
+        "src/kiln_bench/records.py",
+        "src/kiln_bench/client.py",
+        "tests/test_openloop.py",
+        "tests/test_records.py",
+        "tests/test_loadgen.py"
+      ]
+    },
+    {
+      "message": "metrics: nearest-rank percentiles, add p99.9\n\nEvery reported number is a latency that really happened, and\nstatistics.quantiles(n=100) can't do p99.9.",
+      "date": "2026-10-15T16:05:00+02:00",
+      "paths": [
+        "src/kiln_bench/metrics.py",
+        "tests/test_metrics.py",
+        "tests/test_report.py"
+      ]
+    },
+    {
+      "message": "cli: --rate runs the open loop; docs (decision 0005)",
+      "date": "2026-10-16T10:40:00+02:00",
+      "paths": [
+        "src/kiln_bench/cli.py",
+        "tests/test_cli.py",
+        "README.md",
+        "docs/decisions/0005-open-loop-arrivals.md"
+      ]
+    }
+  ],
+  "description_md": "**Why:** INC-2291. Engine pauses pushed customer TTFT p99 past 900 ms for three days and the nightly kiln-bench p99 didn't move. The closed loop stops sending while the engine is paused, so a pause only hits the few requests already in flight (coordinated omission; 0001 even called it out). Kenji wants to gate releases on kiln-bench (KLN-01), so this comes first.\n\n**What:**\n- `--rate` now runs an open loop (`openloop.py`): requests go out on a schedule, Poisson by default or `--arrival constant`, whatever the server does. Same idea as wrk2.\n- Records carry `intended_at` (the scheduled send) next to `sent_at` (renamed from `start`), so latency now includes any time a request spent waiting to go out.\n- In open-loop mode `--concurrency` caps requests in flight, so a stuck server can't make us open thousands of sockets.\n- Percentiles are nearest-rank (every number is a latency that really happened, like HdrHistogram) and the report has p99.9 for the release gate. Wrote it by hand because `statistics.quantiles(n=100)` can't do p99.9.\n- Not in this PR: trace replay, changing the closed-loop default for runs without `--rate`.\n\n**How tested:**\n- New `tests/test_openloop.py`; updated metrics/records/report/cli tests. CI green on Linux and macOS.\n- INC-2291 repro on my laptop. Fake server: `kiln-bench fake-server --prefill-ms 20 --itl-ms 5 --pause-every 20 --pause-for 1` (one 1 s engine pause per 20 s), 20 s runs, `--max-tokens 8`.\n\nBefore (main, `--concurrency 4`):\n\n```\n918 requests in 20.01 s (45.9 ok/s), 0 errors\n                 p50       p90       p99\nTTFT (ms)       32.9      38.7      44.2\nITL (ms)         6.0       7.0       7.8\nE2E (ms)        82.6      88.9      95.9\noutput tokens/s: 366.9\n```\n\nAfter (this branch, `--rate 40`):\n\n```\n669 requests in 20.05 s (33.4 ok/s), 0 errors\n                 p50       p90       p99     p99.9\nTTFT (ms)       25.3      28.1      33.1    1000.7\nITL (ms)         6.0       7.0       9.0      11.1\nE2E (ms)        69.0      73.0      80.1    1065.5\noutput tokens/s: 267.0\n```\n\np99.9 TTFT finally shows the 1 s pause, where the closed loop showed nothing. p50 also dropped a bit because we're not hammering it with 4 back-to-back workers anymore.\n\n**Risk / rollout:** results files rename `start` to `sent_at`; `report` still reads old files. The regression bot only reads the summary JSON, which gains `p99.9` keys and loses nothing.\n\n**Reviewer notes:** start with `openloop.py`, then `metrics.percentile`. Least sure about using `--concurrency` (default 4) as the in-flight cap; 4 felt safe for staging. @Luigi this is yours once it merges, so don't go easy on it.\n\n**Follow-ups:** trace replay from recorded prompts; `--slo` flags so the release gate can fail a run."
+}

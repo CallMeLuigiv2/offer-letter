@@ -1,0 +1,32 @@
+{
+  "id": "kilnworks",
+  "name": "Kilnworks",
+  "pitch": "An API that serves open-source models, on shared and dedicated GPUs.",
+  "domain": "ai",
+  "domain_label": "AI/ML infrastructure",
+  "stage": "growth",
+  "stage_label": "Growth · ~120 people",
+  "culture": "\"No perf claim without a trace and a p99.\" Every PR that touches the hot path needs a before/after run. Weekly incident review, blameless but blunt.",
+  "stack": ["Python", "Go", "vLLM"],
+  "team_name": "Serving",
+  "team_blurb": "Serving owns the path from the gateway to the GPUs: launch profiles, routing, autoscaling, and the benchmarks that gate every release.",
+  "repos": [
+    {
+      "name": "kiln-bench",
+      "description": "Load generator and latency reports for OpenAI-compatible streaming endpoints, plus a fake inference server for local runs. The nightly regression bot and the release gate read its JSON."
+    }
+  ],
+  "personas": ["dana", "kenji", "ines", "theo", "amara", "leo"],
+  "outsiders": [
+    {"id": "rosa", "name": "Rosa Delgado", "pronouns": "she/her", "role": "Platform SRE (Platform team)"},
+    {"id": "marcus", "name": "Marcus Bell", "pronouns": "he/him", "role": "CEO"}
+  ],
+  "channels": [
+    {"name": "serving", "topic": "Serving team: gateway → router → engines. Bench numbers or it didn't happen. On call this week: Kenji."},
+    {"name": "random", "topic": "Lunch, links, and the office plant situation."},
+    {"name": "incidents", "topic": "Live incidents and follow-ups. Post the timeline, not the blame. Open: INC-2291 follow-up (TTFT spikes during engine pauses)."},
+    {"name": "announcements", "topic": "Company news. Read-only for most; all-hands notes land here."}
+  ],
+  "first_ticket": {"id": "KLN-01", "title": "Fix the load generator before we trust its p99"},
+  "kit_ready": true
+}

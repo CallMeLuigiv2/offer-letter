@@ -1,0 +1,23 @@
+{
+  "id": "KLN-01",
+  "title": "Fix the load generator before we trust its p99",
+  "type": "review-to-own",
+  "level": "L1",
+  "size_hours": 5,
+  "repo": "kiln-bench",
+  "reporter": "kenji",
+  "assignee_hint": "player",
+  "skills": ["REVIEW", "TEST", "PERF", "READ", "MLSYS"],
+  "pass_bars": {
+    "review": {"recall": 0.6, "precision": 0.5},
+    "quiz": {"score": 0.8}
+  },
+  "stages": ["review", "quiz", "explain", "change", "own"],
+  "blocks": [
+    {"minutes": 60, "what": "Read the PR and the decision notes; run it against the fake server with an engine pause"},
+    {"minutes": 60, "what": "Review comments and the quiz"},
+    {"minutes": 90, "what": "Fixes, Amara's request, regression tests"},
+    {"minutes": 60, "what": "Walk Theo through it; take ownership"}
+  ],
+  "brief_md": "**Context.** INC-2291: engine pauses pushed customer TTFT p99 past 900 ms for three days. kiln-bench's nightly p99 stayed flat the whole time. Rosa asked the right question in #incidents: why didn't our own benchmark see it?\n\nFrom the next release train we want to gate releases on kiln-bench. Before we do that, its numbers have to be right.\n\nTheo has a PR that switches `--rate` to an open loop and adds p99.9 (`theo/open-loop-arrivals`). You're the reviewer. Once it merges you own kiln-bench's load generator: the release gate, the nightly job, and the questions in #serving when the numbers look odd.\n\n**What I need**\n1. Review the PR. Run it against the fake server with an engine pause before you approve (`kiln-bench fake-server --pause-every 20 --pause-for 1` is close to what INC-2291 looked like). Don't trust a number because it looks plausible, including the ones in the description. Comment on what's wrong, why it matters, and how bad it is.\n2. Quiz, then walk Theo through what you found. He's on the release-gate rota too.\n3. Fix what you found, plus Amara's request (she'll post it after the review). Add tests that would have caught the problems.\n\n**Done when** the report for the INC-2291 repro tells us what a customer would have seen, the fixes have tests, and Amara's ask is in.\n\n**Read first:** `docs/decisions/0001` to `0004` (short). wrk2's README, the part on coordinated omission.\n\nTime box: about 5 hours across the week. If you're stuck for more than 30 minutes, ask in #serving. That's not a weakness, it's how this team works.\n\n— Kenji"
+}

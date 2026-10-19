@@ -1,0 +1,381 @@
+{
+  "pyproject.toml": {
+    "v0.1.0": [
+      [
+        "version = \"0.4.0\"",
+        "version = \"0.1.0\""
+      ]
+    ],
+    "v0.2.0": [
+      [
+        "version = \"0.4.0\"",
+        "version = \"0.2.0\""
+      ]
+    ],
+    "v0.3.0": [
+      [
+        "version = \"0.4.0\"",
+        "version = \"0.3.0\""
+      ]
+    ]
+  },
+  "src/kiln_bench/__init__.py": {
+    "v0.1.0": [
+      [
+        "__version__ = \"0.4.0\"",
+        "__version__ = \"0.1.0\""
+      ]
+    ],
+    "v0.2.0": [
+      [
+        "__version__ = \"0.4.0\"",
+        "__version__ = \"0.2.0\""
+      ]
+    ],
+    "v0.3.0": [
+      [
+        "__version__ = \"0.4.0\"",
+        "__version__ = \"0.3.0\""
+      ]
+    ]
+  },
+  ".github/workflows/ci.yml": {
+    "no_smoke": [
+      [
+        "\n  smoke:\n    # A short run against the fake server, so a broken CLI fails CI too.\n    runs-on: ubuntu-latest\n    needs: test\n    steps:\n      - uses: actions/checkout@v4\n      - uses: astral-sh/setup-uv@v6\n        with:\n          version: \"0.8.22\"\n      - run: uv sync --locked\n      - name: Fake server + 3 s run\n        run: |\n          uv run kiln-bench fake-server --port 8099 &\n          sleep 2\n          uv run kiln-bench run --concurrency 2 --duration 3 --format json > summary.json\n          python -c \"import json; s = json.load(open('summary.json')); assert s['errors'] == 0, s\"\n",
+        ""
+      ]
+    ]
+  },
+  "README.md": {
+    "no_windows": [
+      [
+        "\n## Windows\n\nOn Windows with Python 3.12, asyncio's timers are only good to 15.6 ms.\nkiln-bench works around it (`_platform.run`, decision 0004), so use\n`_platform.run()` instead of `asyncio.run()` in new code and tests.\n",
+        ""
+      ]
+    ],
+    "no_pause_row": [
+      [
+        "| `--pause-every S --pause-for P` | every S seconds the whole engine stops for P seconds (all streams freeze, new requests wait), like the engine pauses in INC-2291 |\n",
+        ""
+      ],
+      [
+        "                       [--pause-every S --pause-for S]\n",
+        ""
+      ]
+    ],
+    "no_owner": [
+      [
+        "Owner: Serving team (#serving). Decision notes live in `docs/decisions/`;\nread them before changing how anything is measured.\n\n",
+        ""
+      ],
+      [
+        "\nAgainst a real endpoint, set `KILN_API_KEY` and pass `--url` and\n`--model`. Never point a load test at production without telling\n#serving first.\n",
+        "\nAgainst a real endpoint, set `KILN_API_KEY` and pass `--url` and\n`--model`.\n"
+      ]
+    ],
+    "no_rate": [
+      [
+        "\nWith `--rate`, each worker also sleeps so the workers together aim for\nthat many requests per second.",
+        ""
+      ],
+      [
+        "               [--rate RPS] [--max-tokens N]",
+        "               [--max-tokens N]"
+      ]
+    ]
+  },
+  "src/kiln_bench/client.py": {
+    "pre_0002": [
+      [
+        "                for choice in chunk.get(\"choices\", ()):\n                    # kiln-gateway flushes an empty role delta as soon as it\n                    # admits the request. That is not a token (decision 0002).\n                    if choice.get(\"delta\", {}).get(\"content\"):\n                        now = self.clock()\n                        if rec.first_token_at is None:\n                            rec.first_token_at = now\n                        rec.token_times.append(now)\n",
+        "                now = self.clock()\n                if rec.first_token_at is None:\n                    rec.first_token_at = now\n                for choice in chunk.get(\"choices\", ()):\n                    if choice.get(\"delta\", {}).get(\"content\"):\n                        rec.token_times.append(now)\n"
+      ]
+    ]
+  },
+  "src/kiln_bench/records.py": {
+    "pre_0002": [
+      [
+        "    \"\"\"When the first chunk with non-empty content arrived (decision 0002).\"\"\"",
+        "    \"\"\"When the first chunk arrived.\"\"\""
+      ]
+    ]
+  },
+  "tests/test_client.py": {
+    "pre_0002": [
+      [
+        "def test_ttft_waits_for_the_first_content_token():\n    async def go():\n        async with fake_endpoint(prefill_ms=60, itl_ms=2) as (_, client):\n            return await client.stream_chat(\"hi\", RequestRecord(id=0))\n\n    rec = run(go())\n    assert rec.status == 200\n    # The role delta arrives right away; TTFT must not stop there.\n    assert rec.ttft_s >= 0.04\n\n\n",
+        ""
+      ],
+      [
+        "    assert rec.token_times[0] == rec.first_token_at\n",
+        ""
+      ]
+    ],
+    "pre_leo": [
+      [
+        "from kiln_bench._platform import run\n",
+        ""
+      ],
+      [
+        "    rec = run(go())\n",
+        "    rec = asyncio.run(go())\n",
+        "all"
+      ],
+      [
+        "import httpx\n",
+        "import asyncio\nimport httpx\n"
+      ]
+    ]
+  },
+  "tests/test_fake_server.py": {
+    "pre_0002": [
+      [
+        "    assert first.ttft_s < 0.2 and second.ttft_s < 0.2\n    assert third.ttft_s >= 0.38  # asyncio timers on Windows can fire ~15 ms early\n",
+        "    first_token = [r.token_times[0] - r.start for r in (first, second, third)]\n    assert first_token[0] < 0.2 and first_token[1] < 0.2\n    assert first_token[2] >= 0.38\n"
+      ]
+    ],
+    "pre_leo": [
+      [
+        "from kiln_bench._platform import run\n",
+        ""
+      ],
+      [
+        "    assert run(go()) == (200, 404)\n",
+        "    assert asyncio.run(go()) == (200, 404)\n",
+        "all"
+      ],
+      [
+        "    data = run(go())\n",
+        "    data = asyncio.run(go())\n",
+        "all"
+      ],
+      [
+        "    first, second, third = run(go())\n",
+        "    first, second, third = asyncio.run(go())\n",
+        "all"
+      ],
+      [
+        "    running, arriving = run(go())\n",
+        "    running, arriving = asyncio.run(go())\n",
+        "all"
+      ]
+    ],
+    "pre_pause": [
+      [
+        "\n\ndef test_pause_window_blocks_new_and_running_streams():\n    async def go():\n        async with fake_endpoint(prefill_ms=5, itl_ms=20, max_tokens=40,\n                                 pause_every_s=2.0, pause_s=0.6) as (server, client):\n            loop = asyncio.get_running_loop()\n            pause_start = server.started_at + 1.4  # first pause: 1.4 s .. 2.0 s\n            await asyncio.sleep(pause_start - 0.2 - loop.time())\n            # ~0.8 s of tokens, so this one is mid-stream when the engine stops.\n            running = asyncio.create_task(client.stream_chat(\"hi\", RequestRecord(id=0)))\n            await asyncio.sleep(pause_start + 0.1 - loop.time())\n            arriving = await client.stream_chat(\"hi\", RequestRecord(id=1))\n            return await running, arriving\n\n    running, arriving = asyncio.run(go())\n    # Arrived 0.1 s into a 0.6 s pause: no first token until the pause ends.\n    assert arriving.ttft_s >= 0.45\n    # The stream that was already running has one gap that spans the pause.\n    assert max(running.itl_s()) >= 0.5\n",
+        ""
+      ]
+    ]
+  },
+  "src/kiln_bench/metrics.py": {
+    "pre_0003": [
+      [
+        "import math\nimport statistics\nfrom collections import Counter",
+        "import math\nfrom collections import Counter"
+      ],
+      [
+        "def percentiles(values: Sequence[float], qs: Sequence[int] = PERCENTILES) -> dict[str, float]:\n    \"\"\"Percentiles by linear interpolation between the closest ranks.\n\n    Same numbers as numpy's default method and\n    ``statistics.quantiles(method=\"inclusive\")``. Integer percentiles only;\n    see docs/decisions/0003-percentiles.md for why we stop at p99.\n    \"\"\"\n    if not values:\n        return {f\"p{q}\": math.nan for q in qs}\n    if len(values) == 1:\n        return {f\"p{q}\": float(values[0]) for q in qs}\n    cuts = statistics.quantiles(values, n=100, method=\"inclusive\")\n    return {f\"p{q}\": cuts[q - 1] for q in qs}\n",
+        "def percentiles(values: Sequence[float], qs: Sequence[int] = PERCENTILES) -> dict[str, float]:\n    if not values:\n        return {f\"p{q}\": math.nan for q in qs}\n    ordered = sorted(values)\n    return {f\"p{q}\": ordered[min(int(len(ordered) * q / 100), len(ordered) - 1)] for q in qs}\n"
+      ]
+    ]
+  },
+  "tests/test_metrics.py": {
+    "pre_0003": [
+      [
+        "def test_percentiles_interpolate_between_ranks():\n    p = percentiles([float(x) for x in range(1, 11)])\n    assert p[\"p50\"] == pytest.approx(5.5)\n    assert p[\"p90\"] == pytest.approx(9.1)\n    assert p[\"p99\"] == pytest.approx(9.91)\n\n\n",
+        ""
+      ],
+      [
+        "    assert s.ttft_ms[\"p50\"] == pytest.approx(150.0)\n",
+        ""
+      ]
+    ]
+  },
+  "src/kiln_bench/loadgen.py": {
+    "no_rate": [
+      [
+        "        rate: float | None = None,\n",
+        ""
+      ],
+      [
+        "        if rate is not None and rate <= 0:\n            raise ValueError(\"rate must be positive\")\n",
+        ""
+      ],
+      [
+        "        self.rate = rate\n",
+        ""
+      ],
+      [
+        "    async def _worker(self) -> None:\n        # With a target rate each worker paces itself to its share of it.\n        # A worker never has two requests in flight, so this is still a\n        # closed loop: a slow response delays the next send (decision 0001).\n        interval = self.concurrency / self.rate if self.rate else 0.0\n        while (req_id := self._claim()) is not None:\n            began = self.clock()\n            self.records.append(await self._one(req_id))\n            if interval:\n                await asyncio.sleep(max(0.0, interval - (self.clock() - began)))\n",
+        "    async def _worker(self) -> None:\n        while (req_id := self._claim()) is not None:\n            self.records.append(await self._one(req_id))\n"
+      ]
+    ]
+  },
+  "tests/test_loadgen.py": {
+    "no_rate": [
+      [
+        "\n\ndef test_rate_paces_the_workers():\n    records = run_closed(concurrency=2, duration_s=1.0, rate=20, server={\"prefill_ms\": 2, \"itl_ms\": 1})\n    # 20 req/s for 1 s, give or take timer jitter.\n    assert 16 <= len(records) <= 22\n",
+        ""
+      ]
+    ],
+    "pre_leo": [
+      [
+        "from kiln_bench._platform import run\n",
+        ""
+      ],
+      [
+        "    return run(go())\n",
+        "    return asyncio.run(go())\n",
+        "all"
+      ],
+      [
+        "from helpers import fake_endpoint\n",
+        "import asyncio\n\nfrom helpers import fake_endpoint\n"
+      ]
+    ]
+  },
+  "src/kiln_bench/cli.py": {
+    "no_rate": [
+      [
+        "    run.add_argument(\"--rate\", type=float, metavar=\"RPS\",\n                     help=\"target requests/s, split across the workers (paced, see decision 0001)\")\n",
+        ""
+      ],
+      [
+        "            rate=args.rate,\n",
+        ""
+      ]
+    ],
+    "pre_hint": [
+      [
+        "def _print_summary(records: list[RequestRecord], fmt: str, url: str | None = None) -> int:\n    summary = summarize(records)\n    print(render_json(summary) if fmt == \"json\" else render_text(summary))\n    if records and summary.ok == 0:\n        hint = f\" Is anything listening on {url}? Try `kiln-bench fake-server`.\" if url else \"\"\n        print(f\"kiln-bench: all {summary.requests} requests failed.{hint}\", file=sys.stderr)\n        return 1\n    return 0\n",
+        "def _print_summary(records: list[RequestRecord], fmt: str, url: str | None = None) -> int:\n    summary = summarize(records)\n    print(render_json(summary) if fmt == \"json\" else render_text(summary))\n    return 0\n"
+      ]
+    ],
+    "pre_leo": [
+      [
+        "import argparse\nimport logging\n",
+        "import argparse\nimport asyncio\nimport logging\n"
+      ],
+      [
+        "from kiln_bench import __version__, _platform, fake_server\n",
+        "from kiln_bench import __version__, fake_server\n"
+      ],
+      [
+        "    records = _platform.run(_run(args, prompts))\n",
+        "    records = asyncio.run(_run(args, prompts))\n"
+      ],
+      [
+        "        _platform.run(fake_server.serve_forever(config))\n",
+        "        asyncio.run(fake_server.serve_forever(config))\n"
+      ]
+    ]
+  },
+  "tests/test_cli.py": {
+    "pre_hint": [
+      [
+        "def test_run_against_nothing_says_what_to_do(tmp_path, capsys):\n    # Port 9 (discard) is not listening on a dev machine.\n    assert main([\"run\", \"--url\", \"http://127.0.0.1:9\", \"--requests\", \"2\", \"--concurrency\", \"1\"]) == 1\n    assert \"kiln-bench fake-server\" in capsys.readouterr().err\n\n\n",
+        ""
+      ]
+    ]
+  },
+  "src/kiln_bench/report.py": {
+    "pre_kinds": [
+      [
+        "    if s.errors_by_kind:\n        kinds = \", \".join(f\"{kind} x{n}\" for kind, n in sorted(s.errors_by_kind.items()))\n        lines.append(f\"errors: {kinds}\")\n",
+        ""
+      ]
+    ]
+  },
+  "tests/test_report.py": {
+    "pre_kinds": [
+      [
+        "    assert \"errors: timeout x1\" in text\n",
+        ""
+      ]
+    ]
+  },
+  "src/kiln_bench/fake_server.py": {
+    "pre_leo": [
+      [
+        "    from kiln_bench._platform import run\n\n    with contextlib.suppress(KeyboardInterrupt):\n        run(serve_forever(config))\n",
+        "    with contextlib.suppress(KeyboardInterrupt):\n        asyncio.run(serve_forever(config))\n"
+      ]
+    ],
+    "pre_pause": [
+      [
+        "- **engine pauses**: every ``pause_every_s`` seconds the whole engine\n  stops for ``pause_s`` seconds. Every stream freezes and new requests\n  wait. From outside this is what a long GC or a KV-cache compaction\n  looks like (INC-2291).\n",
+        ""
+      ],
+      [
+        "    pause_every_s: float = 0.0\n    \"\"\"Period of engine pauses. 0 turns them off.\"\"\"\n    pause_s: float = 0.0\n    \"\"\"Length of each engine pause. The first one starts after\n    pause_every_s - pause_s seconds.\"\"\"\n",
+        ""
+      ],
+      [
+        "        self.started_at: float | None = None\n        \"\"\"Event-loop time (``loop.time()``) when the server started; pauses are\n        scheduled from here.\"\"\"\n        self._engine_running = asyncio.Event()\n        self._engine_running.set()\n",
+        ""
+      ],
+      [
+        "        self._pauser: asyncio.Task[None] | None = None\n",
+        ""
+      ],
+      [
+        "        self.started_at = asyncio.get_running_loop().time()\n        if cfg.pause_every_s > 0 and cfg.pause_s > 0:\n            if cfg.pause_s >= cfg.pause_every_s:\n                raise ValueError(\"pause_s must be shorter than pause_every_s\")\n            self._pauser = asyncio.create_task(self._pause_loop())\n",
+        ""
+      ],
+      [
+        "        if self._pauser is not None:\n            self._pauser.cancel()\n            with contextlib.suppress(asyncio.CancelledError):\n                await self._pauser\n        self._engine_running.set()\n",
+        ""
+      ],
+      [
+        "    async def _pause_loop(self) -> None:\n        cfg = self.config\n        loop = asyncio.get_running_loop()\n        next_pause = self.started_at + cfg.pause_every_s - cfg.pause_s\n        while True:\n            await asyncio.sleep(max(0.0, next_pause - loop.time()))\n            self._engine_running.clear()\n            await asyncio.sleep(max(0.0, next_pause + cfg.pause_s - loop.time()))\n            self._engine_running.set()\n            next_pause += cfg.pause_every_s\n\n",
+        ""
+      ],
+      [
+        "        await asyncio.sleep(self.config.prefill_ms / 1000 + extra_s)\n        await self._engine_running.wait()\n",
+        "        await asyncio.sleep(self.config.prefill_ms / 1000 + extra_s)\n"
+      ],
+      [
+        "        await asyncio.sleep(self.config.itl_ms / 1000)\n        await self._engine_running.wait()\n",
+        "        await asyncio.sleep(self.config.itl_ms / 1000)\n"
+      ],
+      [
+        "    parser.add_argument(\"--pause-every\", type=float, default=0.0, metavar=\"S\",\n                        help=\"pause the whole engine every S seconds (0 = never)\")\n    parser.add_argument(\"--pause-for\", type=float, default=0.0, metavar=\"S\",\n                        help=\"length of each engine pause\")\n",
+        ""
+      ],
+      [
+        "        pause_every_s=args.pause_every,\n        pause_s=args.pause_for,\n",
+        ""
+      ]
+    ]
+  },
+  "tests/conftest.py": {
+    "pre_leo": [
+      [
+        "from kiln_bench._platform import new_event_loop, precise_timers\nfrom kiln_bench.fake_server import FakeServer, FakeServerConfig\n\n\n@pytest.fixture(autouse=True, scope=\"session\")\ndef _precise_timers() -> Iterator[None]:\n    with precise_timers():\n        yield\n",
+        "from kiln_bench.fake_server import FakeServer, FakeServerConfig\n"
+      ],
+      [
+        "    loop = new_event_loop()\n",
+        "    loop = asyncio.new_event_loop()\n"
+      ]
+    ]
+  },
+  "tests/test_sse.py": {
+    "pre_leo": [
+      [
+        "from kiln_bench._platform import run\n",
+        ""
+      ],
+      [
+        "    return run(go())\n",
+        "    return asyncio.run(go())\n",
+        "all"
+      ],
+      [
+        "from kiln_bench.sse import iter_sse_data\n",
+        "import asyncio\n\nfrom kiln_bench.sse import iter_sse_data\n"
+      ]
+    ]
+  }
+}
