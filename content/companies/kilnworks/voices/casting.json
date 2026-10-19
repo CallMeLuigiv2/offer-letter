@@ -1,0 +1,66 @@
+{
+  "status": "proposed; Luigi's blind test decides",
+  "engine": "Kokoro-82M via kokoro-onnx 0.6.1; blends are weighted averages of style vectors; all clips rendered by tools/voice/render.py",
+  "personas": {
+    "dana": {
+      "name": "Dana Whitfield", "gender": "f", "role": "Engineering manager", "age": "Early 40s",
+      "personality": "Calm and direct ex-SRE; says the hard thing once, kindly.",
+      "primary": {"candidate": "b_dana", "voices": {"af_nova": 0.5, "af_kore": 0.5}, "speed": 0.97,
+        "why": "Lowest female pitch in the cast (~155 Hz) and a touch slower: reads as mature and unhurried, not young or bubbly."},
+      "alternates": [
+        {"candidate": "af_alloy", "voices": {"af_alloy": 1.0}, "speed": 1.0, "why": "Low, flat, assertive; closest to 'direct'."},
+        {"candidate": "af_heart@0.92", "voices": {"af_heart": 1.0}, "speed": 0.92, "why": "Warmest base voice, slowed; leans kind over direct. Close to Amara in pitch."}
+      ]
+    },
+    "kenji": {
+      "name": "Kenji Mori", "gender": "m", "role": "Tech lead", "age": "Mid 30s",
+      "personality": "Terse and benchmark-driven; decides fast, admits when wrong.",
+      "primary": {"candidate": "b_kenji", "voices": {"am_onyx": 0.5, "am_michael": 0.5}, "speed": 1.04,
+        "why": "Deepest male in the cast (~100 Hz), slightly brisk: curt, senior, no wasted words. Onyx alone is too deep and flat, so Michael adds some life."},
+      "alternates": [
+        {"candidate": "bm_lewis", "voices": {"bm_lewis": 1.0}, "speed": 1.0, "why": "Equally deep, British; reads dry and clipped."},
+        {"candidate": "b_fenrir_onyx", "voices": {"am_fenrir": 0.6, "am_onyx": 0.4}, "speed": 1.05, "why": "A little lighter (~115 Hz) with Fenrir's crisp consonants."}
+      ]
+    },
+    "ines": {
+      "name": "Ines Duarte", "gender": "f", "role": "Senior engineer (GPU serving)", "age": "Late 20s",
+      "personality": "High-bar reviewer who teaches by asking.",
+      "primary": {"candidate": "af_aoede@1.05", "voices": {"af_aoede": 1.0}, "speed": 1.05,
+        "why": "Crisp, mid-high (~180 Hz), a little quick: sharp and precise, young but not girlish. Sits between Dana (low) and Amara (high)."},
+      "alternates": [
+        {"candidate": "b_ines", "voices": {"af_kore": 0.6, "bf_emma": 0.4}, "speed": 1.0, "why": "Kore with a hint of British Emma: composed, slightly formal."},
+        {"candidate": "bf_emma", "voices": {"bf_emma": 1.0}, "speed": 1.0, "why": "Best British female; articulate, teacherly. Accent may feel off for a US team."}
+      ]
+    },
+    "theo": {
+      "name": "Theo Lindqvist", "gender": "m", "role": "Engineer (peer)", "age": "Early 20s",
+      "personality": "Fast, friendly, ships quickly and sometimes sloppily.",
+      "primary": {"candidate": "am_liam@1.1", "voices": {"am_liam": 1.0}, "speed": 1.1,
+        "why": "Mid-pitch (~125-130 Hz) and 10% faster: easygoing, quick, casual. Sits between Kenji (deep) and Leo (high)."},
+      "alternates": [
+        {"candidate": "am_puck@1.15", "voices": {"am_puck": 1.0}, "speed": 1.15, "why": "Lively, energetic, grade C+; very fast, may be too hyper."},
+        {"candidate": "b_theo", "voices": {"am_puck": 0.6, "am_liam": 0.4}, "speed": 1.08, "why": "Puck's energy steadied by Liam; lower than the primary."}
+      ]
+    },
+    "amara": {
+      "name": "Amara Osei", "gender": "f", "role": "Product manager", "age": "Early 30s",
+      "personality": "Customer-obsessed; always asks 'when?'",
+      "primary": {"candidate": "b_amara", "voices": {"af_bella": 0.6, "af_sarah": 0.4}, "speed": 1.03,
+        "why": "Highest and brightest voice in the cast (~205 Hz), warm and persuasive; the energy of someone relaying a customer's pain."},
+      "alternates": [
+        {"candidate": "af_bella@1.12", "voices": {"af_bella": 1.0}, "speed": 1.12, "why": "Bella, faster: more urgent."},
+        {"candidate": "af_sarah", "voices": {"af_sarah": 1.0}, "speed": 1.0, "why": "Plainer and more matter-of-fact (~195 Hz)."}
+      ]
+    },
+    "leo": {
+      "name": "Leo Park", "gender": "m", "role": "Intern", "age": "20",
+      "personality": "Eager, hesitant to ask for help.",
+      "primary": {"candidate": "am_eric@0.95", "voices": {"am_eric": 1.0}, "speed": 0.95,
+        "why": "Highest male in the cast (~160 Hz), slightly slower: boyish and a bit tentative. Grade D base voice, so listen for roughness."},
+      "alternates": [
+        {"candidate": "b_leo", "voices": {"am_echo": 0.5, "am_eric": 0.5}, "speed": 1.0, "why": "Echo and Eric: lower (~130 Hz) and calmer, less boyish."},
+        {"candidate": "b_eric_fable", "voices": {"am_eric": 0.6, "bm_fable": 0.4}, "speed": 1.0, "why": "Eric with a soft British edge; gentle, polite."}
+      ]
+    }
+  }
+}
