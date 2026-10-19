@@ -192,3 +192,36 @@ def test_demo_runner_is_deterministic_and_grades_by_keywords(client: TestClient)
     assert [r["covered"] for r in out["rubric"]] == [True, False] and out["passed"] is False
     prompt2 = prompt.replace("Luigi: the", "Luigi: a monotonic clock and the")
     assert asyncio.run(demo.reply(kenji, prompt2, json_schema={})).structured["passed"] is True
+
+
+def test_role_lookup_prefers_engineering_manager_and_whole_words() -> None:
+    import random
+    from offerletter.director import Director
+    from offerletter.teammates.personas import Persona, pick_role
+    people = [
+        Persona("k.amara", "k", "Amara Osei", "Product manager"),
+        Persona("k.dana", "k", "Dana Whitfield", "Engineering manager"),
+        Persona("k.ines", "k", "Ines Duarte", "Senior engineer (GPU serving)"),
+        Persona("k.theo", "k", "Theo Lindqvist", "Engineer"),
+        Persona("k.kenji", "k", "Kenji Mori", "Tech lead"),
+    ]
+    assert pick_role(people, "engineering manager", "manager").slug == "dana"
+    assert pick_role(people, "tech lead", "lead").slug == "kenji"
+    assert pick_role(people[:1], "engineering manager", "manager").slug == "amara"  # fallback only if no EM
+    d, _ = __import__("test_unit").make_director()
+    ch = {"kind": "channel", "members_json": "[]"}
+    # "bug"/"code"/"stuck" belong to engineers, not to Dana ("Engineering manager" is not "engineer")
+    picks = {d2.choose_responders(ch, "I'm stuck on a bug in the code", people)[0].slug
+             for d2 in (Director.__new__(Director),) if setattr(d2, "rng", random.Random(1)) is None}
+    assert "dana" not in picks and picks <= {"theo", "ines", "kenji"}
+
+
+def test_also_valid_findings_leave_precision_alone() -> None:
+    from offerletter import review
+    issues = [{"id": "I1", "title": "t", "path": "a.py", "line_start": 10, "line_end": 10}]
+    also = [{"path": "b.py", "line_start": 12, "line_end": 12, "note": "fair"}]
+    comments = [{"id": "1", "path": "a.py", "line": 10, "severity": "major"},
+                {"id": "2", "path": "b.py", "line": 12, "severity": "minor"},
+                {"id": "3", "path": "c.py", "line": 1, "severity": "minor"}]
+    assert review.score_review(issues, [], comments, also)["precision"] == 0.5  # 1 of {1, 3}
+    assert review.score_review(issues, [], comments)["precision"] == 1 / 3

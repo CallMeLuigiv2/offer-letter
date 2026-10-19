@@ -90,3 +90,8 @@ Note for the lead (content's suggestion): precision = matching / all comments, s
 - **`offerletter serve --fake-teammates`**: uses `teammates/demo.py::DemoRunner` (deterministic canned in-character replies per persona, expressions cycling through the seven values via the `[expr:x]` tag, explain grader that marks a rubric point covered when the learner's lines contain one of its key words of 5+ letters; typing delays scaled to 0.15). No Claude calls, no plan usage. `/api/health` reports `teammates: true`.
 - **Portraits** are served as `.webp` (`image/webp`) and `.png`, including `<expr>_talk.webp`, at `/portraits/<company>/<persona>/<name>.<ext>`; other extensions and unsafe names 404.
 - **Review severities** are now `blocker | major | minor | nit | praise`. `praise` and `nit` comments may still match an issue (recall) but are left out of the precision denominator and never count as false flags. Tests added in `tests/test_followup.py`.
+
+## Round 4 (2026-10-19) - 63 tests pass
+
+- Role lookups are whole-word and ordered: `pick_role(people, "engineering manager", "manager")` finds the EM before a "Product manager"; same for tech lead. Used by the welcome, clock-in thanks, the `own` note, and `CompanyPack.role_persona`. `ROLE_KEYWORDS` keys are now whole-word roles (`engineering manager`, `product manager`, ...), so "Engineering manager" no longer inherits engineer keywords.
+- `answer_key.also_valid` (path + line range) comments are left out of the precision denominator and never false flags (same as praise/nit); they can't count toward recall unless they match an issue.

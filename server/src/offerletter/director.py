@@ -27,12 +27,12 @@ NO_REPLY = "NO_REPLY"
 
 # role substring -> words that make that person the natural responder
 ROLE_KEYWORDS: dict[str, tuple[str, ...]] = {
-    "manager": ("schedule", "on-call", "oncall", "time off", "vacation", "feedback", "1:1", "team", "promotion",
+    "engineering manager": ("schedule", "on-call", "oncall", "time off", "vacation", "feedback", "1:1", "team", "promotion",
                 "onboarding", "goals", "expectations"),
     "tech lead": ("pr", "review", "ticket", "merge", "test", "tests", "benchmark", "p99", "latency", "design",
                   "branch", "repo", "setup", "bug", "deploy"),
     "senior": ("why", "how does", "gpu", "cache", "batch", "performance", "architecture", "tradeoff", "deep"),
-    "product": ("customer", "deadline", "when", "priority", "roadmap", "scope", "launch", "users"),
+    "product manager": ("customer", "deadline", "when", "priority", "roadmap", "scope", "launch", "users"),
     "intern": ("intern", "pair", "newbie"),
     "engineer": ("code", "function", "bug", "pr", "help", "stuck"),
 }
@@ -101,8 +101,7 @@ class Director:
 
     async def _welcome(self, company_id: str, company_name: str, player: Row, first_ticket: Row | None) -> None:
         people = self.personas(company_id)
-        by_role = lambda *words: next((p for p in people if any(w in p.role.lower() for w in words)), None)  # noqa: E731
-        manager, lead = by_role("manager"), by_role("tech lead", "lead")
+        manager, lead = pm.pick_role(people, "engineering manager", "manager"), pm.pick_role(people, "tech lead", "lead")
         channels = self.db.where("channel", company_id=company_id, kind="channel")
         team = channels[0]["id"] if channels else None
         name = player["name"]
@@ -132,7 +131,7 @@ class Director:
     def clock_in(self, company_id: str, minutes: int) -> str:
         """Records the session and has the tech lead post the standup prompt. Returns the team channel id."""
         people = self.personas(company_id)
-        lead = next((p for p in people if "lead" in p.role.lower()), people[0] if people else None)
+        lead = pm.pick_role(people, "tech lead", "lead") or (people[0] if people else None)
         channels = self.db.where("channel", company_id=company_id, kind="channel")
         team = channels[0]["id"]
         player = self.db.one("SELECT name FROM player LIMIT 1") or {"name": "there"}
@@ -151,7 +150,7 @@ class Director:
                                "ORDER BY rowid", (channel["company_id"], today))
         if not sessions or any(s["thanked"] for s in sessions) or sessions[-1]["standup_channel_id"] != channel["id"]:
             return
-        manager = next((p for p in self.personas(channel["company_id"]) if "manager" in p.role.lower()), None)
+        manager = pm.pick_role(self.personas(channel["company_id"]), "engineering manager", "manager")
         if manager is None:
             return
         self.db.update("work_session", sessions[-1]["id"], thanked=1)
@@ -177,7 +176,7 @@ class Director:
         for p in people:
             score = 3 if re.search(rf"\b{re.escape(p.first_name.casefold())}\b", text) else 0
             for role, words in ROLE_KEYWORDS.items():
-                if role in p.role.lower():
+                if re.search(rf"\b{re.escape(role)}\b", p.role, re.I):
                     score += sum(1 for w in words if re.search(rf"\b{re.escape(w)}\b", text))
             scores.append((score, p))
         best_score, best = max(scores, key=lambda s: s[0], default=(0, None))
@@ -186,7 +185,7 @@ class Director:
         if best_score == 0:
             if not asks:
                 return []  # small talk nobody owns: silence is realistic
-            lead = next((p for p in people if "lead" in p.role.lower()), best)
+            lead = pm.pick_role(people, "tech lead", "lead") or best
             return [lead] if self.rng.random() < 0.8 else []
         return [best] if self.rng.random() < 0.9 else []
 

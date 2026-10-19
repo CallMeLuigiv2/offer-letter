@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -50,6 +51,17 @@ class Persona:
         if self.memory_md.strip():
             parts.append("# What you remember about working with the new hire\n" + self.memory_md.strip())
         return "\n\n".join(parts) + "\n"
+
+
+def pick_role(people: list[Persona], *roles: str) -> Persona | None:
+    """First persona whose role contains one of `roles` as whole words. Earlier roles win over later ones,
+    so ("engineering manager", "manager") finds the EM before a "Product manager" can match."""
+    for role in roles:
+        pattern = re.compile(rf"\b{re.escape(role)}\b", re.I)
+        for p in people:
+            if pattern.search(p.role):
+                return p
+    return None
 
 
 def load_persona(company_id: str, json_path: Path) -> Persona:

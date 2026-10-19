@@ -17,7 +17,7 @@ from typing import Any
 from . import git_service
 from .catalog import load_company_json
 from .config import Settings
-from .teammates.personas import Persona, load_persona
+from .teammates.personas import Persona, load_persona, pick_role
 
 STAGES = ["review", "quiz", "explain", "change", "own", "done"]
 SERVER_ONLY = {"pr", "pr.patch", "reference"}  # parts of a kit that are not copied to .data/kits
@@ -60,10 +60,7 @@ class CompanyPack:
 
     def role_persona(self, *words: str) -> Persona | None:
         """First persona whose role contains any of `words` (case-insensitive)."""
-        for p in self.personas.values():
-            if any(w in p.role.lower() for w in words):
-                return p
-        return None
+        return pick_role(list(self.personas.values()), *words)
 
 
 def load_pack(content_dir: Path, slug: str) -> CompanyPack:

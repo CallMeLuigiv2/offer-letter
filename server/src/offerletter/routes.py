@@ -253,7 +253,7 @@ def build_router(svc: Services) -> APIRouter:
         stages.require_stage(ticket, "review")
         kit = kit_for(ticket)
         comments = [c for c in db.where("review_comment", pr_id=pr_id) if c["author"] == "player" and c["side"] == "new"]
-        score = review.score_review(kit.issues, kit.decoys, comments)
+        score = review.score_review(kit.issues, kit.decoys, comments, kit.answer_key.get("also_valid", []))
         passed = review.review_passed(score, kit.bar("review", "recall", review.RECALL_BAR),
                                       kit.bar("review", "precision", review.PRECISION_BAR))
         debrief_md = review.build_debrief(score, kit.issues, kit.decoys, comments, body.verdict, passed)
@@ -399,7 +399,7 @@ def build_router(svc: Services) -> APIRouter:
         url = next((w for w in (done.stdout + " " + done.stderr).split() if w.startswith("https://")), "")
         db.update("ticket", ticket_id, status="done", stage="done", done_at=now())
         stages.publish_ticket(db, bus, ticket_id)
-        manager = pack_for(ticket).role_persona("manager")
+        manager = pack_for(ticket).role_persona("engineering manager", "manager")
         if manager:
             svc.director.note(manager.id, f"{player_name()} took ownership of {repo} after {ticket_id}.")
         return {"repo_url": url}

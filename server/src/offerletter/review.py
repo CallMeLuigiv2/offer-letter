@@ -19,11 +19,15 @@ def _near(comment: dict[str, Any], path: str, low: int, high: int) -> bool:
     return comment["path"] == path and low - SLACK <= comment["line"] <= high + SLACK
 
 
-def score_review(issues: list[dict], decoys: list[dict], comments: list[dict]) -> dict[str, Any]:
+def score_review(issues: list[dict], decoys: list[dict], comments: list[dict],
+                 also_valid: list[dict] | None = None) -> dict[str, Any]:
     """`comments` are the learner's new-side comments (id, path, line). Returns the section 4 score object."""
     found, matching_ids = [], set()
     # praise and nit comments may match an issue but never cost precision or count as false flags
-    judged = [c for c in comments if c.get("severity") not in UNJUDGED]
+    # also_valid: fair findings outside the key; they are left out of precision too (never a false flag)
+    fair = also_valid or []
+    judged = [c for c in comments if c.get("severity") not in UNJUDGED
+              and not any(_near(c, a["path"], a["line_start"], a.get("line_end", a["line_start"])) for a in fair)]
     for issue in issues:
         hits = [c for c in comments if _near(c, issue["path"], issue["line_start"], issue["line_end"])]
         matching_ids.update(c["id"] for c in hits)
