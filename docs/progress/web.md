@@ -48,3 +48,9 @@ See the bottom of this file for the latest run.
 7. `governor.resets_at` may be an ISO string or epoch seconds.
 8. Portraits are requested from `/portraits/...` on the same origin; the server (or Vite `public/`) must serve them.
 9. The pixel agent replaces `web/src/office/OfficeView.tsx` (default export, props `{personas, onPersonaClick?}`); the route `/office` loads it lazily.
+
+## Latest run (2026-10-19)
+- `pnpm typecheck`: clean. `pnpm build`: ok (one 517 kB chunk warning, fine for a local app).
+- `pnpm test`: 6 files, 39 tests pass (API client vs §4, stage locking, comment anchoring and split rows, governor banner, @mention logic, mock server stage flow).
+- `pnpm e2e`: 1 spec passes headless in mock mode (careers filters, apply, letter, profile, badge, setup check fail then pass, chat + @mention autocomplete, board, locked stepper, review with 4 comments + split/unified + submit modal + results linked to lines, quiz fail then pass, explain with rubric, change fail then pass, own confirm cancel then push, debriefs, governor lunch banner, light theme, 1000px, office placeholder). 30 screenshots in `web/test-results/screens/`.
+- Not done / not tested: the real server (not landed yet); portraits (placeholders shown); no syntax highlighting in the diff.
