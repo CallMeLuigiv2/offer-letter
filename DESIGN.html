@@ -1,0 +1,1182 @@
+<title>Offer Letter Design Doc</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;500&family=Pixelify+Sans:wght@500;700&display=swap">
+<style>
+/* Layout: an employee handbook. A narrow reading column for prose, with full-width
+   "exhibits" (the office, the call, the catalog) that break out of it. */
+:root {
+  --paper: #F4F6F9;
+  --surface: #FFFFFF;
+  --sunk: #E9EDF3;
+  --ink: #141A22;
+  --muted: #5A6472;
+  --line: #D8DEE7;
+  --accent: #2C47D8;
+  --accent-soft: #E4E9FD;
+  --stamp: #C2362B;
+  --ok: #1D7F55;
+  --warn: #9A6412;
+  --ok-soft: #E1F3EA;
+  --warn-soft: #FBF0DC;
+  --stamp-soft: #FBE6E3;
+  --font-display: "Schibsted Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Schibsted Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-letter: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --font-pixel: "Pixelify Sans", "Courier New", monospace;
+  --measure: 68ch;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0E1218; --surface: #151B24; --sunk: #1B2330; --ink: #E5E9F0; --muted: #9AA5B4;
+    --line: #283244; --accent: #93A6FF; --accent-soft: #1D2652; --stamp: #FF8072;
+    --ok: #58C893; --warn: #E2B04B; --ok-soft: #12291F; --warn-soft: #2B2412; --stamp-soft: #34191A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0E1218; --surface: #151B24; --sunk: #1B2330; --ink: #E5E9F0; --muted: #9AA5B4;
+  --line: #283244; --accent: #93A6FF; --accent-soft: #1D2652; --stamp: #FF8072;
+  --ok: #58C893; --warn: #E2B04B; --ok-soft: #12291F; --warn-soft: #2B2412; --stamp-soft: #34191A;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 64px;
+}
+.wrap { max-width: 1120px; margin-inline: auto; }
+.prose { max-width: var(--measure); }
+h1, h2, h3, h4 { font-family: var(--font-display); line-height: 1.15; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.5rem, 3vw, 2.1rem); font-weight: 750; letter-spacing: -0.01em; }
+h3 { font-size: 1.2rem; font-weight: 700; }
+h4 { font-size: 1.05rem; font-weight: 700; }
+p { margin: 0; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+code { background: var(--sunk); padding: 1px 5px; border-radius: 4px; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.pixel { font-family: var(--font-pixel); }
+.muted { color: var(--muted); }
+.small { font-size: 0.9rem; }
+
+/* ---------- hero ---------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 48px; padding-block: 56px 32px; align-items: start; }
+.hero-text { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.logo { font-family: var(--font-pixel); font-weight: 700; font-size: 1.15rem; letter-spacing: 0.06em; color: var(--accent); display: flex; align-items: center; gap: 10px; }
+.logo svg { width: 22px; height: 22px; }
+.lead { font-size: 1.15rem; max-width: 56ch; color: var(--ink); }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 22px; padding-top: 6px; }
+.fact { display: flex; flex-direction: column; }
+.fact b { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.fact span { font-size: 0.82rem; color: var(--muted); }
+
+.letter {
+  position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
+  padding: 30px 30px 26px; font-family: var(--font-letter); font-size: 1.02rem; line-height: 1.55;
+  box-shadow: 0 1px 0 var(--line), 0 18px 40px -24px rgba(20, 26, 34, 0.35);
+  display: flex; flex-direction: column; gap: 12px; min-width: 0;
+}
+.letterhead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 10px; font-family: var(--font-body); }
+.letterhead b { font-weight: 800; letter-spacing: 0.01em; }
+.letterhead span { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
+.letter ul { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 4px; }
+.letter .sig { font-style: italic; color: var(--muted); }
+.stamp {
+  position: absolute; right: 18px; bottom: 18px; transform: rotate(-9deg);
+  border: 2px solid var(--stamp); color: var(--stamp); font-family: var(--font-mono); font-weight: 500;
+  font-size: 0.72rem; letter-spacing: 0.14em; padding: 4px 8px; border-radius: 4px; opacity: 0.85;
+}
+
+/* ---------- toc + callout ---------- */
+.toc { display: flex; flex-wrap: wrap; gap: 6px 8px; padding-block: 8px 28px; border-bottom: 1px solid var(--line); }
+.toc a { font-size: 0.88rem; text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line); padding: 4px 10px; border-radius: 999px; }
+.toc a:hover { border-color: var(--accent); color: var(--accent); }
+.callout { display: flex; gap: 14px; align-items: flex-start; background: var(--warn-soft); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); border-radius: var(--radius); padding: 14px 16px; margin-top: 28px; }
+.callout b { color: var(--warn); }
+
+/* ---------- sections ---------- */
+section { padding-block: 56px 8px; display: flex; flex-direction: column; gap: 20px; scroll-margin-top: 16px; }
+.sec-head { display: flex; flex-direction: column; gap: 8px; }
+.sec-head p { max-width: var(--measure); color: var(--muted); font-size: 1.05rem; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.cols > * { min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+.panel ul, .prose ul { margin: 0; padding-left: 1.15em; display: flex; flex-direction: column; gap: 6px; }
+
+/* pipeline (a real sequence, so it is numbered) */
+.pipeline { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; counter-reset: step; }
+.pipeline li { position: relative; padding: 16px 14px 16px 14px; border-top: 3px solid var(--accent); background: var(--surface); border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.pipeline li:last-child { border-right: 0; border-top-color: var(--ok); }
+.pipeline li::before { counter-increment: step; content: counter(step); font-family: var(--font-pixel); font-weight: 700; font-size: 1.4rem; color: var(--accent); line-height: 1; }
+.pipeline li:last-child::before { color: var(--ok); }
+.pipeline b { font-family: var(--font-display); }
+.pipeline span { font-size: 0.9rem; color: var(--muted); }
+.ticket { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; background: var(--sunk); border-radius: var(--radius); padding: 14px 16px; font-size: 0.93rem; }
+.ticket dt { font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); padding-top: 2px; }
+.ticket dd { margin: 0; }
+
+/* tables */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; background: var(--sunk); }
+tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.tag { font-family: var(--font-mono); font-size: 0.78rem; background: var(--accent-soft); color: var(--accent); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+.w { display: inline-block; min-width: 2.6em; text-align: center; font-family: var(--font-mono); font-size: 0.78rem; padding: 1px 6px; border-radius: 4px; }
+.w-H { background: var(--accent); color: var(--surface); }
+.w-M { background: var(--accent-soft); color: var(--accent); }
+.w-L { background: var(--sunk); color: var(--muted); }
+.st { font-family: var(--font-mono); font-size: 0.76rem; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+.st-ok { background: var(--ok-soft); color: var(--ok); }
+.st-no { background: var(--stamp-soft); color: var(--stamp); }
+.st-maybe { background: var(--warn-soft); color: var(--warn); }
+
+/* ---------- office canvas ---------- */
+.exhibit { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; }
+.office-canvas { display: block; width: 100%; height: auto; aspect-ratio: 192 / 108; image-rendering: pixelated; image-rendering: crisp-edges; background: #2A3547; max-width: 100%; }
+.exhibit-bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; padding: 12px 14px; border-top: 1px solid var(--line); }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button, .btn {
+  font: inherit; font-size: 0.86rem; cursor: pointer; background: var(--paper); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px;
+}
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+.seg button:hover, .btn:hover { border-color: var(--accent); }
+.caption { font-size: 0.9rem; color: var(--muted); min-height: 3em; padding: 0 14px 14px; }
+.clock { font-family: var(--font-pixel); font-weight: 700; color: var(--accent); }
+
+/* ---------- call (visual novel) ---------- */
+.call { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); min-height: 380px; }
+.stage {
+  position: relative; overflow: hidden; min-height: 320px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,0.10) 0 2px, transparent 2px 14px),
+    linear-gradient(180deg, #2D3B66 0%, #6B5C8E 45%, #D9926B 78%, #F1C27D 100%);
+}
+.stage .window-frame { position: absolute; inset: 18px 18px 38% 18px; border: 6px solid rgba(20, 24, 40, 0.55); border-radius: 4px; }
+.stage .table-edge { position: absolute; left: 0; right: 0; bottom: 0; height: 22%; background: linear-gradient(180deg, #4A3527, #2E2119); }
+.portrait { position: absolute; left: 50%; bottom: 14%; transform: translateX(-50%); width: min(78%, 260px); height: auto; }
+.art-note { position: absolute; left: 10px; top: 10px; font-family: var(--font-mono); font-size: 0.68rem; color: #F4F6F9; background: rgba(10, 12, 20, 0.55); padding: 2px 6px; border-radius: 4px; }
+.expr { position: absolute; right: 10px; top: 10px; font-family: var(--font-mono); font-size: 0.72rem; color: #141A22; background: #F1C27D; padding: 2px 8px; border-radius: 999px; }
+.dialog { display: flex; flex-direction: column; gap: 12px; padding: 18px; min-width: 0; }
+.nameplate { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.nameplate b { font-family: var(--font-pixel); font-size: 1.15rem; letter-spacing: 0.04em; color: var(--accent); }
+.nameplate span { font-size: 0.85rem; color: var(--muted); }
+.line { font-size: 1.08rem; min-height: 5.2em; border-left: 3px solid var(--accent); padding-left: 12px; }
+.choices { display: flex; flex-direction: column; gap: 8px; }
+.choice { text-align: left; font: inherit; font-size: 0.93rem; cursor: pointer; background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; }
+.choice:hover { border-color: var(--accent); }
+.note { font-size: 0.88rem; background: var(--accent-soft); color: var(--ink); border-radius: 8px; padding: 10px 12px; }
+.note.bad { background: var(--stamp-soft); }
+.note.good { background: var(--ok-soft); }
+.ptt { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--muted); margin-top: auto; }
+.ptt svg { width: 16px; height: 16px; }
+kbd { font-family: var(--font-mono); font-size: 0.78rem; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
+
+/* ---------- catalog ---------- */
+.filters { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+.co { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.co header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.co .dom { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.co .pitch { font-size: 0.93rem; }
+.co .culture { font-family: var(--font-letter); font-style: italic; color: var(--muted); font-size: 0.98rem; }
+.co .meta { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 0.82rem; color: var(--muted); margin-top: auto; padding-top: 6px; border-top: 1px dashed var(--line); }
+.co .first { font-size: 0.84rem; }
+.co .first b { font-family: var(--font-mono); font-weight: 500; font-size: 0.74rem; color: var(--accent); }
+.stage-chip { font-family: var(--font-mono); font-size: 0.72rem; padding: 2px 7px; border-radius: 4px; background: var(--sunk); color: var(--ink); white-space: nowrap; }
+.stage-chip.growth { background: var(--ok-soft); color: var(--ok); }
+
+/* week strip */
+.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.day { border-radius: 8px; padding: 10px 8px; display: flex; flex-direction: column; gap: 4px; min-height: 104px; border: 1px solid var(--line); background: var(--surface); }
+.day b { font-family: var(--font-pixel); font-size: 1rem; }
+.day span { font-size: 0.8rem; color: var(--muted); line-height: 1.35; }
+.day.office { border-top: 4px solid var(--accent); }
+.day.short { border-top: 4px solid var(--accent-soft); }
+.day.closed { background: var(--sunk); border-style: dashed; }
+.flow { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.flow li { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; font-size: 0.9rem; }
+.flow li + li::before { content: "→"; color: var(--muted); margin-right: 8px; }
+
+/* decisions */
+.decisions { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; counter-reset: dec; }
+.decisions li { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--warn); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.decisions li h4::before { counter-increment: dec; content: counter(dec) ". "; color: var(--warn); }
+.rec { font-size: 0.88rem; }
+.rec b { color: var(--ok); }
+
+pre.mermaid { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; overflow-x: auto; margin: 0; }
+footer { padding-block: 48px 0; color: var(--muted); font-size: 0.88rem; border-top: 1px solid var(--line); margin-top: 56px; }
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 28px; padding-block: 32px 24px; }
+  .pipeline { grid-template-columns: minmax(0, 1fr); }
+  .pipeline li { border-right: 0; border-bottom: 1px solid var(--line); }
+  .call { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .week { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .day { min-height: 0; }
+  .letter { padding: 22px 18px 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
+</style>
+
+<header class="hero wrap">
+  <div class="hero-text">
+    <p class="logo">
+      <svg viewBox="0 0 11 11" aria-hidden="true" shape-rendering="crispEdges"><rect x="1" y="2" width="9" height="7" fill="currentColor"/><rect x="2" y="3" width="7" height="1" fill="var(--paper)"/><rect x="4" y="4" width="3" height="1" fill="var(--paper)"/><rect x="5" y="5" width="1" height="1" fill="var(--paper)"/></svg>
+      OFFER LETTER
+    </p>
+    <p class="eyebrow">Design doc v1 · 19 Oct 2026 · research done, build not started</p>
+    <h1>A software job you can't fake</h1>
+    <p class="lead">Offer Letter is a desktop app that hires you into a fictional company with a team of AI coworkers. They write code, push back on yours, and page you when production breaks. Nothing becomes yours until you prove you understand it.</p>
+    <div class="facts" aria-label="Research behind this design">
+      <div class="fact"><b>3,056</b><span>real job postings analysed</span></div>
+      <div class="fact"><b>21</b><span>skills tracked</span></div>
+      <div class="fact"><b>15</b><span>companies to join</span></div>
+      <div class="fact"><b>139</b><span>tickets written</span></div>
+      <div class="fact"><b>50</b><span>paper-based ideas</span></div>
+    </div>
+  </div>
+  <aside class="letter" aria-label="Sample offer letter">
+    <div class="letterhead"><b>Tallyhaven</b><span>19 Oct 2026</span></div>
+    <p>Dear Luigi,</p>
+    <p>We're pleased to offer you the position of <strong>Software Engineer I</strong> on the Ledger Core team. You'll report to your engineering manager and start on your first Monday.</p>
+    <ul>
+      <li><strong>Schedule:</strong> Monday, Wednesday and Friday in the office; short Tuesdays and Thursdays; weekends off.</li>
+      <li><strong>Team:</strong> six coworkers, including a junior you'll mentor from your third sprint.</li>
+      <li><strong>Probation:</strong> you own no code until you can explain it, change it and defend it.</li>
+      <li><strong>Pay:</strong> real commits on your GitHub.</li>
+    </ul>
+    <p class="sig">The Ledger Core team</p>
+    <span class="stamp">SAMPLE</span>
+  </aside>
+</header>
+
+<nav class="toc wrap" aria-label="Sections">
+  <a href="#rule">The rule</a>
+  <a href="#work">Kinds of work</a>
+  <a href="#office">The office</a>
+  <a href="#team">Your team</a>
+  <a href="#companies">Companies</a>
+  <a href="#week">Your week</a>
+  <a href="#skills">Skills and levels</a>
+  <a href="#feedback">Feedback</a>
+  <a href="#built">How it's built</a>
+  <a href="#pc">Your PC</a>
+  <a href="#plan">Build plan</a>
+  <a href="#decisions">Decisions for you</a>
+  <a href="#next">Where it goes</a>
+</nav>
+
+<main class="wrap">
+
+  <div class="callout" role="note">
+    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 19 18H1Z" fill="none" stroke="currentColor" stroke-width="1.8" style="color: var(--warn)"/><rect x="9.1" y="7.5" width="1.8" height="5.5" fill="currentColor" style="color: var(--warn)"/><rect x="9.1" y="14.3" width="1.8" height="1.8" fill="currentColor" style="color: var(--warn)"/></svg>
+    <p><b>Six calls are yours to make</b> before the build starts: rewards, a WSL update, the art packs, the portrait setup, 30 minutes of testing, and how you pick your first company. They're listed under <a href="#decisions">Decisions for you</a>, each with my recommendation.</p>
+  </div>
+
+  <!-- ===================== THE RULE ===================== -->
+  <section id="rule">
+    <div class="sec-head">
+      <p class="eyebrow">The rule</p>
+      <h2>You earn code. Nobody hands it to you.</h2>
+      <p>Hiring in 2026 tests exactly this. New-grad postings at Vercel, Stripe and Pinterest now say to use AI but verify every line, and interview loops make you read, debug and review code you didn't write. So the core loop of Offer Letter is a five-step gate that a teammate's code must pass through before it becomes yours.</p>
+    </div>
+    <ol class="pipeline">
+      <li><b>Review the PR</b><span>A teammate's pull request with bugs planted on purpose. The harness holds the answer key and scores what you catch and what you flag wrongly.</span></li>
+      <li><b>Take the quiz</b><span>Click questions about this exact code. Answers are checked by running it: predict the output, name the test that breaks if line 42 changes.</span></li>
+      <li><b>Explain it</b><span>A voice call with the author. You walk them through it; they ask the questions a reviewer would.</span></li>
+      <li><b>Change it</b><span>The PM asks for a small change. You make it with no help, and the tests decide.</span></li>
+      <li><b>Own it</b><span>The repo is pushed to your GitHub. Commits keep their real authors, so the history shows the teammate wrote v1 and you own it now.</span></li>
+    </ol>
+    <dl class="ticket" aria-label="Example first ticket">
+      <dt>TICKET</dt><dd><strong>KLN-01 · Fix the load generator before we trust its p99</strong></dd>
+      <dt>COMPANY</dt><dd>Kilnworks, an LLM inference API. Level L1, about 5 hours.</dd>
+      <dt>WHY</dt><dd>Load generators that wait for each response before sending the next one hide the very stalls you're trying to measure. The research found measurement bugs like this make the best planted bugs, because they look like working code.</dd>
+      <dt>DONE</dt><dd>Your review catches the planted issues, the fixed generator reproduces a stall the old one hid, and the quiz is passed.</dd>
+    </dl>
+  </section>
+
+  <!-- ===================== KINDS OF WORK ===================== -->
+  <section id="work">
+    <div class="sec-head">
+      <p class="eyebrow">Kinds of work</p>
+      <h2>Seven kinds of ticket, all graded by running something</h2>
+      <p>Every ticket in the catalog has a done-condition the harness can check itself: tests pass, a benchmark crosses a threshold, a metric holds on held-out data, a planted bug gets found. Thresholds are set from baseline runs on your PC.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Type</th><th>What you do</th><th>How it's graded</th><th class="num">In catalog</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Review to own</strong></td><td>The five-step gate above, on a teammate's PR.</td><td>Planted-bug recall and precision, the quiz, the explanation, and your unaided change.</td><td class="num">19</td></tr>
+          <tr><td><strong>Add your part</strong></td><td>Teammates built pieces, with notes on why. You build yours; they review and push back.</td><td>Tests, plus how you handle review: what you changed, what you defended, and why.</td><td class="num">17</td></tr>
+          <tr><td><strong>Build</strong></td><td>A whole project: design doc, review, milestones, demo.</td><td>Milestone tests and the written design doc.</td><td class="num">35</td></tr>
+          <tr><td><strong>Perf hunt</strong></td><td>Make something faster or cheaper.</td><td>A benchmark the harness runs. You name the hotspot before fixing it.</td><td class="num">16</td></tr>
+          <tr><td><strong>Incident</strong></td><td>A service you run locally breaks. Logs and metrics, fix, postmortem. Several replay real outages, like Cloudflare's in November 2025.</td><td>The fault-injection scenario stops failing, plus the postmortem.</td><td class="num">17</td></tr>
+          <tr><td><strong>Design review</strong></td><td>System design on the whiteboard with a senior teammate who pokes holes.</td><td>Rubric: requirements, estimates, API, data model, failure modes, trade-offs, and the "now 10× the load" follow-up.</td><td class="num">15</td></tr>
+          <tr><td><strong>Experiment</strong></td><td>ML or data work: train, evaluate, compare.</td><td>A metric on a held-out set, with error bars.</td><td class="num">20</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cols">
+      <div class="panel">
+        <h4>Paper tickets</h4>
+        <p class="small">38 of the 139 tickets come from research papers or engineering blogs, with 50 more ideas in the bank. Framed as "our team wants to try this paper in production", they come in three forms:</p>
+        <ul class="small">
+          <li><strong>Reproduce:</strong> get the paper's main effect on a small setup, as a ratio against a baseline run on the same machine. Unless a ticket says otherwise, you pass at 80% of the paper's gain, or 50% when the result depends on hardware scale. You also list where your setup differs from the paper's and run an ablation showing the gain mostly disappears without the key piece.</li>
+          <li><strong>Apply:</strong> make the technique work in the company's code, behind a flag.</li>
+          <li><strong>Adopt memo:</strong> one page on "should we?". The system description hides one fact that breaks the paper's key assumption, and you pass only if you name it.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h4>Ideas from other fields</h4>
+        <p class="small">About a third of the paper ideas come from outside computing. Each one has a real precedent:</p>
+        <ul class="small">
+          <li>Airline seat pricing → selling blocks of GPU time.</li>
+          <li>Factory quality control → spotting drift in model inputs.</li>
+          <li>Psychology test design → shrinking an eval suite to a few questions.</li>
+          <li>Epidemic models → gossip protocols for failure detection.</li>
+          <li>Honey-bee foraging → sharing servers between services.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== OFFICE ===================== -->
+  <section id="office">
+    <div class="sec-head">
+      <p class="eyebrow">The office</p>
+      <h2>The home screen is a place, not a dashboard</h2>
+      <p>A walkable pixel-art office for your company. Teammates sit at their desks, walk to standup, go for coffee, and leave at night. Events happen in the room: the server room flashes when production breaks. Chat stays in a side panel so you never have to walk to send a message. This mockup is drawn in code; the real one uses licensed tile art.</p>
+    </div>
+    <div class="exhibit">
+      <canvas id="office" class="office-canvas" width="192" height="108" role="img" aria-label="Pixel-art office mockup: server room on the left, meeting room on the right, six desks along the bottom, teammates at work."></canvas>
+      <div class="exhibit-bar">
+        <div class="seg" role="group" aria-label="Office scene">
+          <button type="button" id="sc-day" data-scene="day" aria-pressed="true">Normal day</button>
+          <button type="button" id="sc-standup" data-scene="standup" aria-pressed="false">Standup</button>
+          <button type="button" id="sc-incident" data-scene="incident" aria-pressed="false">Incident</button>
+          <button type="button" id="sc-night" data-scene="night" aria-pressed="false">After hours</button>
+        </div>
+        <span class="clock" id="office-clock">10:42</span>
+      </div>
+      <p class="caption" id="office-caption">Normal day. The senior engineer is typing in the team channel, the tech lead has headphones on, and your peer is on a coffee run. You're the one with the yellow marker.</p>
+    </div>
+  </section>
+
+  <!-- ===================== TEAM ===================== -->
+  <section id="team">
+    <div class="sec-head">
+      <p class="eyebrow">Your team</p>
+      <h2>Six coworkers who disagree with you for real reasons</h2>
+      <p>AI assistants tend to agree with whoever they're talking to, which would make the team useless. So every teammate follows one rule: they change their mind for evidence or a better alternative, never because you repeated yourself. About 1 in 4 of their objections is planted wrong, and catching those is part of the job. Try both kinds below.</p>
+    </div>
+
+    <div class="exhibit">
+      <div class="call">
+        <div class="stage" aria-hidden="true">
+          <div class="window-frame"></div>
+          <div class="table-edge"></div>
+          <svg class="portrait" id="portrait" viewBox="0 0 200 240">
+            <path d="M20 240 C 24 196, 60 178, 100 176 C 140 178, 176 196, 180 240 Z" fill="#C2362B"/>
+            <path d="M74 182 L 100 214 L 126 182 Z" fill="#F4F6F9"/>
+            <rect x="86" y="150" width="28" height="34" rx="8" fill="#E8BE9C"/>
+            <path d="M44 112 C 40 50, 70 26, 104 26 C 140 26, 166 52, 160 116 L 164 170 L 136 150 L 64 150 L 38 172 Z" fill="#3B2A55"/>
+            <ellipse cx="102" cy="104" rx="46" ry="54" fill="#F3D2B5"/>
+            <path d="M56 92 C 62 54, 92 44, 112 46 C 136 48, 152 66, 150 96 C 138 74, 118 66, 102 74 C 90 62, 70 70, 56 92 Z" fill="#3B2A55"/>
+            <g id="brows" stroke="#2A1D3D" stroke-width="4" stroke-linecap="round">
+              <line id="brow-l" x1="72" y1="90" x2="92" y2="92"/>
+              <line id="brow-r" x1="112" y1="90" x2="132" y2="86"/>
+            </g>
+            <g id="eyes">
+              <ellipse cx="82" cy="106" rx="8" ry="11" fill="#2A1D3D"/>
+              <ellipse cx="122" cy="106" rx="8" ry="11" fill="#2A1D3D"/>
+              <circle cx="85" cy="101" r="3" fill="#FFFFFF"/>
+              <circle cx="125" cy="101" r="3" fill="#FFFFFF"/>
+            </g>
+            <path id="mouth-closed" d="M92 134 Q 102 136 112 134" stroke="#9B4A3C" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <ellipse id="mouth-open" cx="102" cy="135" rx="7" ry="5" fill="#9B4A3C" visibility="hidden"/>
+            <path id="mouth-smile" d="M90 131 Q 102 142 114 131" stroke="#9B4A3C" stroke-width="3" fill="none" stroke-linecap="round" visibility="hidden"/>
+          </svg>
+          <span class="art-note">placeholder art</span>
+          <span class="expr" id="expr">skeptical</span>
+        </div>
+        <div class="dialog">
+          <div class="nameplate"><b>MAYA</b><span>Senior engineer · Tallyhaven · reviewing your PR #14</span></div>
+          <p class="line" id="line" aria-live="polite">You cached the whole balance response for 30 seconds. What happens when a transfer lands inside that window?</p>
+          <div class="choices" id="choices"></div>
+          <p class="note" id="call-note" hidden></p>
+          <div class="ptt"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="1" width="5" height="9" rx="2.5" fill="currentColor"/><path d="M3 7.5a5 5 0 0 0 10 0M8 12.5V15" stroke="currentColor" stroke-width="1.4" fill="none"/></svg> In the app you answer by voice: hold <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd>, or switch to open mic.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Role</th><th>What they own</th><th>How they treat you</th><th>Friction they bring</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Engineering manager</strong></td><td>People, dates, one-on-ones, your review</td><td>Sets expectations in week 0, checks in once per missed deadline, runs your one-on-one every two weeks</td><td>Asks for a date when you're unsure</td></tr>
+          <tr><td><strong>Tech lead</strong></td><td>Technical direction, design approval</td><td>Assigns your tickets, easy ones first, then harder; runs standup</td><td>Has the final word in design disputes</td></tr>
+          <tr><td><strong>Senior engineer</strong></td><td>A deep domain and its decision notes</td><td>High-bar reviewer, whiteboard partner, teaches by asking</td><td>Nitpicks; sometimes holds out for perfect when good is enough</td></tr>
+          <tr><td><strong>Peer engineer</strong></td><td>The component next to yours</td><td>Pairs with you, reviews fast and informally</td><td>API contract arguments, merge conflicts, slow reviews when busy</td></tr>
+          <tr><td><strong>Product manager</strong></td><td>The why, priorities, scope</td><td>Writes tickets, accepts demos, asks "when?"</td><td>Changes scope mid-sprint because a customer is about to leave</td></tr>
+          <tr><td><strong>Junior you mentor</strong></td><td>Starter tickets, from your third sprint</td><td>Asks you questions, sends you PRs, you run their one-on-one</td><td>Planted mistakes, hesitates to ask for help</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cols">
+      <div class="panel">
+        <h4>What makes them feel like people</h4>
+        <ul class="small">
+          <li>A character sheet, not a quirk: this quarter's goal, what worries them, a blind spot, how they write, when they're out.</li>
+          <li>Memory of what you did and promised, plus plans of their own. A 2023 study of AI characters found that without memory and plans they were the least believable.</li>
+          <li>The sheet is re-sent every turn, because AI characters drift from their instructions within about 8 exchanges.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h4>What keeps them honest</h4>
+        <ul class="small">
+          <li>Everyone is competent. Friction comes from interests you can discover by asking, never from villainy.</li>
+          <li>They only know what their role would know: the PM hasn't read the code, the junior missed the incident.</li>
+          <li>Replies take realistic time, and people are sometimes out of office.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== COMPANIES ===================== -->
+  <section id="companies">
+    <div class="sec-head">
+      <p class="eyebrow">Companies</p>
+      <h2>Fifteen companies, each built from a real niche</h2>
+      <p>All fictional, all researched: each niche, stack, culture and ticket comes from what real companies in that space build, write about and hire for. You choose one on the careers page at onboarding. Every company's first ticket is a starter-level code review.</p>
+    </div>
+    <div class="filters">
+      <div class="seg" role="group" aria-label="Filter by domain">
+        <button type="button" id="f-all" data-f="all" aria-pressed="true">All 15</button>
+        <button type="button" id="f-ai" data-f="ai" aria-pressed="false">AI/ML infrastructure</button>
+        <button type="button" id="f-be" data-f="be" aria-pressed="false">Backend &amp; distributed</button>
+        <button type="button" id="f-growth" data-f="growth" aria-pressed="false">Growth stage (start here)</button>
+      </div>
+    </div>
+    <div class="catalog" id="catalog">
+      <article class="co" data-domain="ai" data-stage="growth">
+        <span class="dom">AI/ML infrastructure</span>
+        <header><h4>Kilnworks</h4><span class="stage-chip growth">Growth · ~120 people</span></header>
+        <p class="pitch">An API that serves open-source models, on shared and dedicated GPUs.</p>
+        <p class="culture">"No perf claim without a trace and a p99."</p>
+        <p class="first"><b>KLN-01</b> Fix the load generator before we trust its p99</p>
+        <p class="meta"><span>Python · Go · vLLM</span><span>11 tickets</span></p>
+      </article>
+      <article class="co" data-domain="ai" data-stage="seed">
+        <span class="dom">AI/ML infrastructure</span>
+        <header><h4>Coldplate</h4><span class="stage-chip">Seed → Series A · ~35</span></header>
+        <p class="pitch">Rents out blocks of GPU clusters with a managed scheduler.</p>
+        <p class="culture">"The fleet is always partly broken."</p>
+        <p class="first"><b>CPL-01</b> Review the GPU health agent</p>
+        <p class="meta"><span>Go · Python · C · Rust</span><span>10 tickets</span></p>
+      </article>
+      <article class="co" data-domain="ai" data-stage="bigtech">
+        <span class="dom">AI/ML infrastructure</span>
+        <header><h4>Loopline</h4><span class="stage-chip">Big-tech division</span></header>
+        <p class="pitch">The ranking and training platform inside a short-video app with 600M users.</p>
+        <p class="culture">Design doc first, launch reviews, and every GPU-hour is tracked.</p>
+        <p class="first"><b>LPL-08</b> Review the sharding estimator</p>
+        <p class="meta"><span>Python · PyTorch</span><span>12 tickets</span></p>
+      </article>
+      <article class="co" data-domain="ai" data-stage="oss">
+        <span class="dom">AI/ML infrastructure</span>
+        <header><h4>Plumbline</h4><span class="stage-chip">Open-source foundation</span></header>
+        <p class="pitch">A vector and full-text search engine that keeps its data in cheap object storage.</p>
+        <p class="culture">RFCs, two maintainer approvals per PR, and the on-disk format is sacred.</p>
+        <p class="first"><b>PLB-01</b> Review the recall check in CI</p>
+        <p class="meta"><span>Rust · Python</span><span>10 tickets</span></p>
+      </article>
+      <article class="co" data-domain="ai" data-stage="growth">
+        <span class="dom">AI/ML infrastructure</span>
+        <header><h4>Sluicegate</h4><span class="stage-chip growth">Growth · ~220 people</span></header>
+        <p class="pitch">Serves live inputs to fraud and risk models, and checks their quality.</p>
+        <p class="culture">"Silent data bugs are sev-1."</p>
+        <p class="first"><b>SLG-01</b> Review the point-in-time join</p>
+        <p class="meta"><span>Python · SQL · Go · Rust</span><span>10 tickets</span></p>
+      </article>
+      <article class="co" data-domain="ai" data-stage="seed">
+        <span class="dom">AI/ML infrastructure</span>
+        <header><h4>Belljar</h4><span class="stage-chip">Seed · 14 people</span></header>
+        <p class="pitch">Sandboxes, tracing and evaluations for teams building AI agents.</p>
+        <p class="culture">"Assume the agent is hostile." Founders write code and ship daily.</p>
+        <p class="first"><b>BLJ-01</b> Review the sandbox exec timeout</p>
+        <p class="meta"><span>Go · Rust · Python</span><span>10 tickets · 2 blocked on your PC</span></p>
+      </article>
+      <article class="co" data-domain="ai" data-stage="seed">
+        <span class="dom">AI/ML infrastructure</span>
+        <header><h4>Mothlight</h4><span class="stage-chip">Seed · 11 people</span></header>
+        <p class="pitch">Solar field cameras that only wake rangers up for animals.</p>
+        <p class="culture">"Battery is the budget." Hardware and ML in one room.</p>
+        <p class="first"><b>MTH-01</b> Review camera vs. cloud preprocessing parity</p>
+        <p class="meta"><span>PyTorch · ONNX · C++</span><span>10 tickets</span></p>
+      </article>
+      <article class="co" data-domain="be" data-stage="growth">
+        <span class="dom">Backend &amp; distributed</span>
+        <header><h4>Tallyhaven</h4><span class="stage-chip growth">Growth · ~220 people</span></header>
+        <p class="pitch">The double-entry ledger behind fintech and marketplace apps.</p>
+        <p class="culture">"Money is never approximately right."</p>
+        <p class="first"><b>T1</b> Idempotency keys for POST /v1/transfers</p>
+        <p class="meta"><span>Go · Postgres</span><span>9 tickets</span></p>
+      </article>
+      <article class="co" data-domain="be" data-stage="seed">
+        <span class="dom">Backend &amp; distributed</span>
+        <header><h4>Scribblewire</h4><span class="stage-chip">Seed · 9 people</span></header>
+        <p class="pitch">Live shared whiteboards with threaded chat for engineering teams.</p>
+        <p class="culture">Ship daily, demo on Friday, founders review every PR.</p>
+        <p class="first"><b>S1</b> Presence: who's online, who's typing</p>
+        <p class="meta"><span>Go · Rust · Redis · ScyllaDB</span><span>8 tickets</span></p>
+      </article>
+      <article class="co" data-domain="be" data-stage="growth">
+        <span class="dom">Backend &amp; distributed</span>
+        <header><h4>Freshet</h4><span class="stage-chip growth">Growth · ~70, remote</span></header>
+        <p class="pitch">Kafka-compatible streaming that stores everything in object storage.</p>
+        <p class="culture">"No perf claim without a flamegraph."</p>
+        <p class="first"><b>F1</b> Agent batcher: many partitions, one object</p>
+        <p class="meta"><span>Go · MinIO</span><span>8 tickets</span></p>
+      </article>
+      <article class="co" data-domain="be" data-stage="oss">
+        <span class="dom">Backend &amp; distributed</span>
+        <header><h4>Siltstone Foundation</h4><span class="stage-chip">Open-source foundation</span></header>
+        <p class="pitch">Stewards of SiltDB, a small embeddable database for time-series and key-value data.</p>
+        <p class="culture">Everything in public: RFCs and design debates in the open.</p>
+        <p class="first"><b>D1</b> Scan statistics: why was this query slow?</p>
+        <p class="meta"><span>Rust</span><span>8 tickets</span></p>
+      </article>
+      <article class="co" data-domain="be" data-stage="growth">
+        <span class="dom">Backend &amp; distributed</span>
+        <header><h4>Glimmerline</h4><span class="stage-chip growth">Late growth · ~600</span></header>
+        <p class="pitch">Logs, metrics and traces in one columnar store, priced by usage.</p>
+        <p class="culture">"Cost is the product." Every team owns a $/GB number.</p>
+        <p class="first"><b>G1</b> Review the tail-sampling processor</p>
+        <p class="meta"><span>Go · Rust · ClickHouse</span><span>8 tickets</span></p>
+      </article>
+      <article class="co" data-domain="be" data-stage="bigtech">
+        <span class="dom">Backend &amp; distributed</span>
+        <header><h4>Alderwick Edge</h4><span class="stage-chip">Big-tech division</span></header>
+        <p class="pitch">The edge proxy, CDN, firewall and DNS division of a large cloud.</p>
+        <p class="culture">Process-heavy and proud of it. Design docs have named reviewers.</p>
+        <p class="first"><b>E1</b> Review the bot-feature file loader</p>
+        <p class="meta"><span>Rust · Go</span><span>8 tickets</span></p>
+      </article>
+      <article class="co" data-domain="be" data-stage="growth">
+        <span class="dom">Backend &amp; distributed</span>
+        <header><h4>Saggarworks</h4><span class="stage-chip growth">Growth</span></header>
+        <p class="pitch">Build caching, CI and package hosting for large shared codebases.</p>
+        <p class="culture">"Our CI builds our CI."</p>
+        <p class="first"><b>K1</b> Review the package upload endpoint</p>
+        <p class="meta"><span>Go · Rust · Python</span><span>9 tickets</span></p>
+      </article>
+      <article class="co" data-domain="be" data-stage="seed">
+        <span class="dom">Backend &amp; distributed</span>
+        <header><h4>Pawl Labs</h4><span class="stage-chip">Seed · 6 people</span></header>
+        <p class="pitch">Crash-proof workflows as a plain library on your own Postgres.</p>
+        <p class="culture">"Write down exactly what is exactly-once."</p>
+        <p class="first"><b>P1</b> Review the SKIP LOCKED task dequeue</p>
+        <p class="meta"><span>Python · Go · Postgres</span><span>8 tickets</span></p>
+      </article>
+    </div>
+    <p class="small muted">Why start at a growth company: a Microsoft study of onboarding found that juniors do best when tasks start simple and get harder, which matches how growth-stage and big-tech teams onboard. Seed startups tend to hand newcomers the top of the backlog, which juniors found stressful, and open-source projects leave them to explore, where juniors stalled.</p>
+  </section>
+
+  <!-- ===================== WEEK ===================== -->
+  <section id="week">
+    <div class="sec-head">
+      <p class="eyebrow">Your week</p>
+      <h2>A job that fits around your real one</h2>
+      <p>Firm but fair: deadlines are real, but they only count your office days. A miss comes up once in standup and once in your review, and nobody nags. You can book days off ahead of time.</p>
+    </div>
+    <div class="week" aria-label="Weekly schedule">
+      <div class="day office"><b>Mon</b><span>Office day. Standup, a full work block, calls.</span></div>
+      <div class="day short"><b>Tue</b><span>Short day. One review or quiz, async only.</span></div>
+      <div class="day office"><b>Wed</b><span>Office day. Design reviews and pairing.</span></div>
+      <div class="day short"><b>Thu</b><span>Short day. Answer threads, small fixes.</span></div>
+      <div class="day office"><b>Fri</b><span>Office day. Demo, retro, one-on-one every other week.</span></div>
+      <div class="day closed"><b>Sat</b><span>Closed. You're at your other job.</span></div>
+      <div class="day closed"><b>Sun</b><span>Closed. Nothing is due.</span></div>
+    </div>
+    <div class="cols">
+      <div class="panel">
+        <h4>Clocking in</h4>
+        <p class="small">Tap your badge and tell the app how long you have: 30, 60, 90 minutes, or open-ended. Tickets come in 30–90 minute work blocks, so even a short session finishes something. The team keeps working overnight, so there are new commits and messages waiting in the morning.</p>
+      </div>
+      <div class="panel">
+        <h4>When the plan runs low</h4>
+        <p class="small">Teammates run on your Claude plan. Past 70% of the 5-hour window they switch to the smallest model and pause background work. Past 90%, the team is "out to lunch until 3:40" and you get offline work: reading, quizzes graded by code, benchmark runs.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <h4>Onboarding, your first two weeks</h4>
+      <ol class="flow" aria-label="Onboarding steps">
+        <li>Careers page</li>
+        <li>Placement interview</li>
+        <li>Offer letter</li>
+        <li>Name, avatar, ID badge</li>
+        <li>Laptop setup: clone, build, tests green</li>
+        <li>Welcome messages and a buddy</li>
+        <li>First ticket: a code review</li>
+      </ol>
+      <p class="small muted">Day 1: a welcome call, your dev environment with tests green, and a tiny first PR merged. Days 2–3: read the team's decision notes and get an architecture tour by voice from the tech lead. Days 4–5: your starter ticket merged and your first standup posted. By week 2: shadow an incident drill and review a teammate's PR.</p>
+    </div>
+  </section>
+
+  <!-- ===================== SKILLS ===================== -->
+  <section id="skills">
+    <div class="sec-head">
+      <p class="eyebrow">Skills and levels</p>
+      <h2>21 skills, five levels, all based on evidence</h2>
+      <p>The skill list comes from 3,056 live job postings at 85 companies, pulled 19 Oct 2026. Junior roles are scarce (3.9% of postings), so the app aims to give you proof of mid-level work. System design shows up in 21% of early-career postings and 69% at staff level, so it grows with your level instead of arriving all at once.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tag</th><th>Skill</th><th>AI infra demand</th><th>Backend demand</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag">READ</span></td><td>Reading unfamiliar code</td><td><span class="w w-H">High</span></td><td><span class="w w-H">High</span></td></tr>
+          <tr><td><span class="tag">DEBUG</span></td><td>Debugging and root cause</td><td><span class="w w-H">High</span></td><td><span class="w w-H">High</span></td></tr>
+          <tr><td><span class="tag">REVIEW</span></td><td>Code review and checking AI output</td><td><span class="w w-M">Med → High</span></td><td><span class="w w-H">High</span></td></tr>
+          <tr><td><span class="tag">TEST</span></td><td>Testing and verification</td><td><span class="w w-M">Med</span></td><td><span class="w w-H">High</span></td></tr>
+          <tr><td><span class="tag">CODE</span></td><td>Implementation craft</td><td><span class="w w-H">High</span></td><td><span class="w w-H">High</span></td></tr>
+          <tr><td><span class="tag">API</span></td><td>API and interface design</td><td><span class="w w-M">Med</span></td><td><span class="w w-H">High</span></td></tr>
+          <tr><td><span class="tag">DB</span></td><td>Databases and storage internals</td><td><span class="w w-M">Med</span></td><td><span class="w w-H">High</span></td></tr>
+          <tr><td><span class="tag">DIST</span></td><td>Distributed systems and consistency</td><td><span class="w w-H">High</span></td><td><span class="w w-H">High</span></td></tr>
+          <tr><td><span class="tag">OS</span></td><td>Operating systems, concurrency, memory</td><td><span class="w w-M">Med → High</span></td><td><span class="w w-M">Med</span></td></tr>
+          <tr><td><span class="tag">NET</span></td><td>Networking</td><td><span class="w w-M">Med</span></td><td><span class="w w-L">Low → Med</span></td></tr>
+          <tr><td><span class="tag">PERF</span></td><td>Performance, profiling, cost</td><td><span class="w w-H">High</span></td><td><span class="w w-H">High</span></td></tr>
+          <tr><td><span class="tag">OBS</span></td><td>Observability, reliability, incidents</td><td><span class="w w-H">High</span></td><td><span class="w w-H">High</span></td></tr>
+          <tr><td><span class="tag">INFRA</span></td><td>Cloud infrastructure, containers, Kubernetes</td><td><span class="w w-H">High</span></td><td><span class="w w-M">Med → High</span></td></tr>
+          <tr><td><span class="tag">SD</span></td><td>System design and architecture</td><td><span class="w w-H">High</span></td><td><span class="w w-H">High</span></td></tr>
+          <tr><td><span class="tag">MLSYS</span></td><td>ML systems: serving, training, GPUs</td><td><span class="w w-H">High</span></td><td><span class="w w-L">Low</span></td></tr>
+          <tr><td><span class="tag">ML</span></td><td>Modelling, evals, LLM apps</td><td><span class="w w-M">Med</span></td><td><span class="w w-M">Med</span></td></tr>
+          <tr><td><span class="tag">DATA</span></td><td>Data pipelines, streaming, data quality</td><td><span class="w w-M">Med</span></td><td><span class="w w-M">Med</span></td></tr>
+          <tr><td><span class="tag">SEC</span></td><td>Security</td><td><span class="w w-M">Med</span></td><td><span class="w w-M">Med</span></td></tr>
+          <tr><td><span class="tag">COMM</span></td><td>Design docs, writing, discussion</td><td><span class="w w-M">Med</span></td><td><span class="w w-H">High</span></td></tr>
+          <tr><td><span class="tag">EXEC</span></td><td>Execution and ownership</td><td><span class="w w-H">High</span></td><td><span class="w w-H">High</span></td></tr>
+          <tr><td><span class="tag">LIT</span></td><td>Research literacy: papers into production</td><td><span class="w w-M">Med</span></td><td><span class="w w-L">Low → Med</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cols">
+      <div class="panel">
+        <h4>The ladder</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Level</th><th>Real-world match</th><th>Scope</th></tr></thead>
+            <tbody>
+              <tr><td><strong>L1</strong></td><td>New grad (Dropbox IC1, CircleCI E1)</td><td>Executes defined tasks</td></tr>
+              <tr><td><strong>L2</strong></td><td>After about a year (GitLab Intermediate)</td><td>Ships small features with little guidance</td></tr>
+              <tr><td><strong>L3</strong></td><td>Mid-level (Dropbox IC2, CircleCI E2)</td><td>Delivers defined projects for team goals</td></tr>
+              <tr><td><strong>L4</strong></td><td>Senior-ready</td><td>Works out ambiguous problems alone</td></tr>
+              <tr><td><strong>L5</strong></td><td>Senior (Dropbox IC3, CircleCI E3)</td><td>Owns quarterly projects, mentors new hires</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <h4>The placement interview</h4>
+        <ul class="small">
+          <li><strong>A. Codebase dive</strong> (60 min): read a 5,000-line service, fix a planted bug without AI, then add a feature with it.</li>
+          <li><strong>B. PR review</strong> (40 min): six planted issues, including one made-up API call of the kind AI writes.</li>
+          <li><strong>C. Measure and fix</strong> (45 min): name the hotspot before profiling, then fix to a target.</li>
+          <li><strong>D. Design-lite</strong> (45 min): for example, a rate-limited gateway in front of an LLM API.</li>
+          <li><strong>E. Fundamentals</strong> (15 min): click quizzes.</li>
+          <li><strong>F. Paper read</strong> (20 min, optional).</li>
+        </ul>
+        <p class="small muted">You start at the lowest level that passes A and B, the two skills hardest to fake with AI, and never above L3. A and B rerun every six weeks with fresh code, so your level always rests on recent evidence.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FEEDBACK ===================== -->
+  <section id="feedback">
+    <div class="sec-head">
+      <p class="eyebrow">Feedback</p>
+      <h2>No points. Debriefs and real consequences instead.</h2>
+      <p>You want it to feel like a game, and it will, through the world, the characters and the story. The research is clear about scoring systems, though. In a classroom study, badges and leaderboards lowered motivation and exam scores. Rewards you expect to get undermine the drive to learn. And feedback hurt performance in about a third of studied cases, mostly when it was aimed at the person rather than the work. Feedback on the work itself is the single most important feature of simulation-based learning.</p>
+    </div>
+    <div class="cols">
+      <div class="panel"><h4>After every piece of work</h4><p class="small">A short debrief about the work itself: what the review caught, what it missed, which number moved, and what a senior would have done differently.</p></div>
+      <div class="panel"><h4>Progress you can see</h4><p class="small">Promotions with real scope: on-call duty, design-review lead, the junior to mentor. Your desk shows things you actually shipped, like a framed link to a merged PR.</p></div>
+      <div class="panel"><h4>What stays</h4><p class="small">Your ID badge is who you are at the company, not a reward. The office changes because of what happened, not because you hit a score.</p></div>
+    </div>
+  </section>
+
+  <!-- ===================== BUILT ===================== -->
+  <section id="built">
+    <div class="sec-head">
+      <p class="eyebrow">How it's built</p>
+      <h2>A desktop app with web tech inside</h2>
+      <p>v0.1 runs in the browser. From v0.2 it's wrapped in Tauri, which gives push-to-talk that works while you're typing in your editor, Windows notifications, a tray icon, and a small call window that stays on top. You write code in your own editor with real git.</p>
+    </div>
+<pre class="mermaid">
+flowchart LR
+  ED["Your editor and terminal"]
+  subgraph APP["Desktop app, Tauri 2 from v0.2"]
+    UI["React UI: chat, task board, code review, whiteboard"]
+    OFF["Pixel office: Phaser and Tiled"]
+  end
+  subgraph SRV["Python server: FastAPI, websockets, SQLite"]
+    DIR["Director: sprints, pacing, events"]
+    TM["Teammate runner: character sheets and memory"]
+    GR["Graders: tests, benchmarks, quizzes"]
+    GIT["Company git: repos, PRs, answer keys"]
+    SBX["Sandboxes: Docker per ticket"]
+    VOX["Voice: VAD, Whisper, Kokoro"]
+    GOV["Usage governor"]
+  end
+  CLI["claude CLI on your Max plan: Haiku, Sonnet, Opus"]
+  GH["Your GitHub, owned repos only"]
+  OFF --- UI
+  UI &lt;--&gt; SRV
+  ED &lt;--&gt; GIT
+  TM --&gt; CLI
+  GOV --&gt; CLI
+  GR --&gt; SBX
+  GIT --&gt; GH
+</pre>
+    <div class="cols">
+      <div class="panel">
+        <h4>Teammates on your plan</h4>
+        <ul class="small">
+          <li>Each teammate is the regular <code>claude</code> program in headless mode, signed in with your own login. Anthropic's docs explicitly allow signing in to the unmodified program with your own plan; the Agent SDK page points developers to API keys, so the SDK isn't used.</li>
+          <li>Never the <code>--bare</code> flag: it skips your login, and the docs say it will become the default later. The app checks your sign-in at startup and refuses to run on an API key.</li>
+          <li>At most two Claude processes at a time. Haiku for chat and standups, Sonnet for writing and reviewing PRs, Opus for design reviews and the senior engineer.</li>
+          <li>Heavy content (planted-bug PRs, decision notes, onboarding docs) is generated once per company ahead of time, not live.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h4>Faces and voices</h4>
+        <ul class="small">
+          <li>Portraits: one approved image per character, seven expressions made by repainting only the face, three mouth and two eye overlays, and mouth movement driven by the audio's loudness.</li>
+          <li>Generated locally on your RTX 4070 with ComfyUI and Animagine XL 4.0, about 20 minutes of GPU time per character.</li>
+          <li>Voices: Kokoro has about 16 good English voices, only 5 male, so male teammates use blended voices. A blind test checks they sound like different people.</li>
+          <li>Audio stays in Python, reusing grokbot's pipeline.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Part</th><th>Pick</th><th>Why, from the licence</th></tr></thead>
+        <tbody>
+          <tr><td>Office art</td><td>LimeZu packs, locally only; Kenney (public domain) for anything public</td><td>LimeZu forbids redistributing the assets, so they never go in a public repo.</td></tr>
+          <tr><td>Whiteboard</td><td>Excalidraw (MIT)</td><td>tldraw needs a paid licence key in production.</td></tr>
+          <tr><td>Animation</td><td>Motion (MIT)</td><td>GSAP is free but proprietary, with a clause against competing with Webflow.</td></tr>
+          <tr><td>Portrait model</td><td>Animagine XL 4.0 (OpenRAIL++-M)</td><td>The Illustrious family's licence forces derived models to be open.</td></tr>
+          <tr><td>Code review view</td><td>@git-diff-view/react, comments anchored to lines</td><td>Answer keys for planted bugs live on the server, never in the repo you see.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== PC ===================== -->
+  <section id="pc">
+    <div class="sec-head">
+      <p class="eyebrow">Your PC</p>
+      <h2>What runs here, checked today</h2>
+      <p>Read-only checks on your Ryzen 9 5900X, 32 GB RAM and RTX 4070 (12 GB). Nothing was installed or changed.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Check</th><th>Result</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td>GPU inside WSL</td><td><span class="st st-ok">works</span></td><td>RTX 4070, driver 610.88, PyTorch sees CUDA. Every GPU ticket can run.</td></tr>
+          <tr><td>Hardware virtualization (KVM) in WSL</td><td><span class="st st-no">not available</span></td><td>Lightweight VMs (Firecracker) won't start, so Belljar's BLJ-03 is blocked. A WSL update might fix it (decision 2).</td></tr>
+          <tr><td>Linux resource controls (cgroup v2)</td><td><span class="st st-no">not enabled</span></td><td>Belljar's BLJ-02 is blocked as configured. Its other parts still work.</td></tr>
+          <tr><td>Per-process GPU stats</td><td><span class="st st-no">not in WSL</span></td><td>Coldplate's CPL-05 uses recorded telemetry instead of live readings.</td></tr>
+          <tr><td>Intercepting GPU calls</td><td><span class="st st-maybe">plausible</span></td><td>Coldplate's CPL-04 waits on a short test. A stray GPU driver library from an Ubuntu package could get loaded by mistake.</td></tr>
+          <tr><td>GPU inside Docker</td><td><span class="st st-maybe">unknown</span></td><td>Docker wasn't running during the check. Tested in spike S9.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== PLAN ===================== -->
+  <section id="plan">
+    <div class="sec-head">
+      <p class="eyebrow">Build plan</p>
+      <h2>Small experiments first, then five releases</h2>
+      <p>Each spike is a short experiment with a pass condition, ordered by how much of the design it could overturn. S4 and S6 need you at the keyboard.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Spike</th><th>Test</th><th>Passes when</th><th class="num">Time</th></tr></thead>
+        <tbody>
+          <tr><td><strong>S1</strong></td><td>Two teammates on your plan</td><td>Signed in with your login, stay in character, remember a fact after a restart, and don't see your personal Claude instructions</td><td class="num">1 h</td></tr>
+          <tr><td><strong>S2</strong></td><td>Review loop core</td><td>Your comments on planted lines score, a decoy doesn't, and git shows honest authorship</td><td class="num">2 h</td></tr>
+          <tr><td><strong>S3</strong></td><td>Pixel office</td><td>60 fps at 1080p, six teammates pathfinding, no licensed art in git</td><td class="num">2 h</td></tr>
+          <tr><td><strong>S4</strong></td><td>Voice cast <span class="muted">(you)</span></td><td>In a blind test you rate at least 12 voices distinct, at least 5 of them male</td><td class="num">1 h</td></tr>
+          <tr><td><strong>S5</strong></td><td>Tauri shell</td><td>Starts in under 5 s, quitting leaves no stray Python, office speed within 10% of Chrome</td><td class="num">2 h</td></tr>
+          <tr><td><strong>S6</strong></td><td>Push-to-talk <span class="muted">(you)</span></td><td>20 holds in VS Code give exactly 20 starts and 20 stops; the mic opens in under 50 ms</td><td class="num">45 min</td></tr>
+          <tr><td><strong>S7</strong></td><td>Portrait pipeline</td><td>Under 11 GB of GPU memory, no hair or outfit drift across 7 expressions, under 20 min per character</td><td class="num">3 h</td></tr>
+          <tr><td><strong>S8</strong></td><td>Whiteboard</td><td>10 of 10 AI-generated diagrams load and stay editable</td><td class="num">1.5 h</td></tr>
+          <tr><td><strong>S9</strong></td><td>Docker sandboxes</td><td>Memory limits and no-network hold; GPU visible inside a container</td><td class="num">1.5 h</td></tr>
+          <tr><td><strong>S10</strong></td><td>GPU call interception</td><td>A 1 GB cap stops a 2 GB allocation cleanly</td><td class="num">1.5 h</td></tr>
+          <tr><td><strong>S11</strong></td><td>WSL update re-check <span class="muted">(your OK)</span></td><td>KVM and cgroup v2 appear after <code>wsl --update</code></td><td class="num">20 min</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Release</th><th>What you get</th></tr></thead>
+        <tbody>
+          <tr><td><strong>v0.1</strong><br><span class="muted small">browser</span></td><td>The workspace (channels, DMs, task board), three teammates by text (manager, tech lead, senior), company git with the review view, the full review-to-own loop on one company, placement blocks A and B, the usage governor, debriefs.</td></tr>
+          <tr><td><strong>v0.2</strong></td><td>The Tauri desktop app, voice calls (push-to-talk and open mic), anime portraits with lip-flap, standups.</td></tr>
+          <tr><td><strong>v0.3</strong></td><td>Add-your-part and build tickets, the full team (peer and PM), design reviews on the whiteboard, sprints and deadlines.</td></tr>
+          <tr><td><strong>v0.4</strong></td><td>The Director, the pixel office as the home screen, one-on-ones, performance reviews and promotions, the junior you mentor.</td></tr>
+          <tr><td><strong>v0.5</strong></td><td>Incidents and on-call with fault injection, paper tickets, real open-source issues, a second company, changing jobs.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted prose">Behind every release sits the content work: each company needs a starter codebase and ticket kits (spec, planted-bug answer key, grader, baseline numbers). I build them offline and run every grader on your PC before a ticket reaches you.</p>
+  </section>
+
+  <!-- ===================== DECISIONS ===================== -->
+  <section id="decisions">
+    <div class="sec-head">
+      <p class="eyebrow">Decisions for you</p>
+      <h2>Six calls before the build starts</h2>
+    </div>
+    <ol class="decisions">
+      <li><h4>Rewards</h4><p class="small">In-world consequences and debriefs only, or add some game-style rewards anyway?</p><p class="rec"><b>Recommended:</b> in-world only, as above. The research against scores is strong.</p></li>
+      <li><h4>WSL update test</h4><p class="small">Run <code>wsl --update</code> and restart WSL, then re-check KVM and cgroup v2. It could unblock two Belljar tickets, but it changes your WSL.</p><p class="rec"><b>Recommended:</b> yes, when you're not mid-project in WSL.</p></li>
+      <li><h4>Office art</h4><p class="small">Buy LimeZu's Modern Interiors and Modern Office packs on itch.io (kept on your PC only), or start with the free Kenney packs.</p><p class="rec"><b>Recommended:</b> LimeZu. It's the look in the mockup, and Kenney stays as the public fallback.</p></li>
+      <li><h4>Portrait setup</h4><p class="small">Install ComfyUI and Animagine XL 4.0 (several GB), and spend about 20 minutes of GPU time per character.</p><p class="rec"><b>Recommended:</b> yes, at v0.2. v0.1 is text-only.</p></li>
+      <li><h4>30 minutes of testing</h4><p class="small">A blind voice test (about 20 minutes) and a push-to-talk test in VS Code (about 10 minutes).</p><p class="rec"><b>Recommended:</b> when v0.2 starts.</p></li>
+      <li><h4>Your first company</h4><p class="small">You choose on the careers page during onboarding. The app can lock the choice to growth-stage companies for your first job, or show all 15.</p><p class="rec"><b>Recommended:</b> growth-stage first, everything unlocked from your second job.</p></li>
+    </ol>
+  </section>
+
+  <!-- ===================== NEXT ===================== -->
+  <section id="next">
+    <div class="sec-head">
+      <p class="eyebrow">Where it goes</p>
+      <h2>Built to grow</h2>
+    </div>
+    <div class="cols">
+      <div class="panel"><h4>More domains</h4><p class="small">Games and engines, security, data and analytics. A company is a pack: team, codebase, backlog and culture, so adding one doesn't touch the app.</p></div>
+      <div class="panel"><h4>Changing jobs</h4><p class="small">After a few months, leave. The placement interview becomes a real interview loop at the next company, with a new stack and a new culture.</p></div>
+      <div class="panel"><h4>Real open-source issues</h4><p class="small">Over 40 real repos with live starter issues are already listed. Teammates help you scope one; the upstream PR is 100% yours.</p></div>
+      <div class="panel"><h4>A brag doc that writes itself</h4><p class="small">Every shipped ticket adds a line with its numbers to a résumé draft you can edit.</p></div>
+      <div class="panel"><h4>New papers, new tickets</h4><p class="small">The paper bank grows as papers come out. Each one becomes a reproduce, apply or adopt-memo ticket.</p></div>
+      <div class="panel"><h4>Real people</h4><p class="small">Later, friends could join as teammates, and messages could reach your phone through the local server.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <p><strong>Research behind this page</strong>, all in <code>C:\Users\Owner\projects\offer-letter\research\</code>:</p>
+    <ul class="small">
+      <li><code>01-hiring-and-skills.md</code>: 3,056 postings, 21 skills, the ladder, placement interview (plus the postings CSV)</li>
+      <li><code>02-ai-ml-infra-catalog.md</code>: 7 companies, 73 tickets, 22 open-source repos</li>
+      <li><code>03-backend-distributed-catalog.md</code>: 8 companies, 66 tickets, 20 open-source repos</li>
+      <li><code>04-workplace-realism.md</code>: rituals, team roles, culture profiles, templates, pitfalls</li>
+      <li><code>05-tech-feasibility.md</code>: stack picks, licences, PC checks, spikes</li>
+      <li><code>06-paper-idea-bank.md</code>: 50 paper and blog ideas</li>
+    </ul>
+    <p class="small">Claims the research couldn't verify are marked in each file and get checked before any ticket depends on them.</p>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ================= pixel office ================= */
+  var cv = document.getElementById("office");
+  var ctx = cv.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  var C = {
+    floorA: "#C9A27A", floorB: "#BE9670", wall: "#3B4A63", trim: "#2A3547", win: "#9FD3F0", winNight: "#1B2A44",
+    desk: "#7A5234", deskTop: "#8C6140", mon: "#1E242E", scrOn: "#6FE0C8", scrOff: "#2B333F",
+    srvFloor: "#2C3340", rack: "#151A22", ledG: "#4CFF8A", ledR: "#FF4D4D", carpet: "#8FA1B5",
+    table: "#6B4A2F", board: "#F2F4F7", pot: "#A0522D", leaf: "#3E9B4F", chair: "#2E3A4F", coffee: "#4A4F57"
+  };
+  var desks = [10, 34, 58, 82, 106, 130];
+  var people = [
+    { id: "em", hair: "#5B3A29", skin: "#E0B48C", shirt: "#7B4FA0", desk: 0 },
+    { id: "tl", hair: "#1A1A1A", skin: "#C68A62", shirt: "#2F8F6B", desk: 1 },
+    { id: "you", hair: "#2B1B10", skin: "#8D5A3B", shirt: "#2C47D8", desk: 2 },
+    { id: "senior", hair: "#3B2A55", skin: "#F0C8A0", shirt: "#C2362B", desk: 3 },
+    { id: "peer", hair: "#D9A441", skin: "#E8C29A", shirt: "#3C6E9E", desk: 4 },
+    { id: "pm", hair: "#7A2E2E", skin: "#A86A48", shirt: "#E0A030", desk: 5 }
+  ];
+  function seat(p) { return { x: desks[p.desk] + 8, y: 95 }; }
+  people.forEach(function (p) { var s = seat(p); p.x = s.x; p.y = s.y; p.zone = "desk"; p.path = []; p.bubble = null; p.hidden = false; p.step = 0; });
+  var byId = {}; people.forEach(function (p) { byId[p.id] = p; });
+
+  function route(p, zone, slot) {
+    var pts = [], s = seat(p), gx = s.x + 13;
+    if (p.zone === "server") pts.push({ x: 40, y: 47 }, { x: 52, y: 47 }, { x: 52, y: 70 });
+    else if (p.zone === "meeting") { pts = pts.concat(p.slot && p.slot.via ? p.slot.via.slice().reverse() : []); pts.push({ x: 146, y: 51 }, { x: 134, y: 51 }, { x: 134, y: 70 }); }
+    else if (p.zone === "desk") pts.push({ x: gx, y: s.y }, { x: gx, y: 70 });
+    else pts.push({ x: p.x, y: 70 });
+    if (zone === "desk") pts.push({ x: gx, y: 70 }, { x: gx, y: s.y }, { x: s.x, y: s.y });
+    else if (zone === "server") pts.push({ x: 52, y: 70 }, { x: 52, y: 47 }, { x: 40, y: 47 }, slot);
+    else if (zone === "meeting") { pts.push({ x: 134, y: 70 }, { x: 134, y: 51 }, { x: 146, y: 51 }); pts = pts.concat(slot.via || []); pts.push(slot); }
+    else if (zone === "coffee") pts.push({ x: 116, y: 70 }, { x: 116, y: 34 });
+    p.path = pts; p.zone = zone; p.slot = slot || null;
+    if (reduce) { var last = pts[pts.length - 1]; p.x = last.x; p.y = last.y; p.path = []; }
+  }
+
+  var scene = "day", frame = 0, timers = [];
+  var meetSlots = [
+    { x: 146, y: 43, via: [] },
+    { x: 158, y: 32, via: [{ x: 146, y: 32 }] },
+    { x: 168, y: 32, via: [{ x: 146, y: 32 }] },
+    { x: 186, y: 43, via: [{ x: 146, y: 58 }, { x: 186, y: 58 }] },
+    { x: 158, y: 58, via: [{ x: 146, y: 58 }] },
+    { x: 170, y: 58, via: [{ x: 146, y: 58 }] }
+  ];
+  var captions = {
+    day: ["10:42", "Normal day. The senior engineer is typing in the team channel, the tech lead has headphones on, and your peer is on a coffee run. You're the one with the yellow marker."],
+    standup: ["10:00", "Standup. Everyone walks to the meeting room; the tech lead goes through the board. Your update is a written artifact, and that's what gets read later."],
+    incident: ["14:17", "Incident. A rack in the server room is alarming. The tech lead and you head over; the PM wants to know what to tell customers. This becomes your postmortem."],
+    night: ["23:50", "After hours. The office is dark, but the senior engineer works from another timezone, so there'll be a new commit to review in the morning."]
+  };
+
+  function setScene(name) {
+    scene = name;
+    timers.forEach(clearTimeout); timers = [];
+    people.forEach(function (p) { p.bubble = null; p.hidden = false; });
+    if (name === "day") {
+      people.forEach(function (p) { if (p.zone !== "desk") route(p, "desk"); });
+      byId.senior.bubble = "dots"; byId.tl.bubble = "phones";
+      if (!reduce) {
+        var loop = function () {
+          if (scene !== "day") return;
+          route(byId.peer, "coffee");
+          timers.push(setTimeout(function () { if (scene === "day") route(byId.peer, "desk"); }, 6500));
+          timers.push(setTimeout(function () { if (scene === "day") route(byId.pm, "meeting", meetSlots[5]); }, 3000));
+          timers.push(setTimeout(function () { if (scene === "day") route(byId.pm, "desk"); }, 11000));
+          timers.push(setTimeout(loop, 16000));
+        };
+        loop();
+      } else { route(byId.peer, "coffee"); }
+    } else if (name === "standup") {
+      people.forEach(function (p, i) { route(p, "meeting", meetSlots[i]); });
+      byId.tl.bubble = "talk";
+    } else if (name === "incident") {
+      people.forEach(function (p) { if (p.id !== "tl" && p.id !== "you" && p.zone !== "desk") route(p, "desk"); });
+      route(byId.tl, "server", { x: 22, y: 54 });
+      route(byId.you, "server", { x: 32, y: 54 });
+      byId.pm.bubble = "ask"; byId.tl.bubble = "alert";
+    } else if (name === "night") {
+      people.forEach(function (p) { var s = seat(p); p.path = []; p.x = s.x; p.y = s.y; p.zone = "desk"; p.slot = null; p.hidden = p.id !== "senior"; });
+    }
+    var cap = captions[name];
+    document.getElementById("office-clock").textContent = cap[0];
+    document.getElementById("office-caption").textContent = cap[1];
+    document.querySelectorAll("[data-scene]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-scene") === name)); });
+    if (reduce) draw();
+  }
+
+  function R(x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); }
+
+  function drawRoom() {
+    var night = scene === "night";
+    for (var ty = 18; ty < 108; ty += 6) for (var tx = 0; tx <= 192; tx += 12) R(tx + ((ty / 6) % 2 ? 6 : 0) - 6, ty, 12, 6, ((tx / 12 + ty / 6) % 2) ? C.floorA : C.floorB);
+    R(0, 0, 192, 18, C.wall); R(0, 16, 192, 2, C.trim);
+    [62, 86, 110].forEach(function (x) { R(x, 4, 16, 9, C.trim); R(x + 1, 5, 14, 7, night ? C.winNight : C.win); R(x + 8, 5, 1, 7, C.trim); });
+    R(0, 18, 46, 44, C.srvFloor);
+    R(46, 18, 2, 22, C.trim); R(46, 52, 2, 12, C.trim); R(0, 62, 48, 2, C.trim);
+    var alarm = scene === "incident";
+    [5, 17, 29].forEach(function (x, i) {
+      R(x, 22, 10, 24, C.rack);
+      for (var r = 0; r < 5; r++) {
+        var on = ((frame >> 4) + r + i) % 3 !== 0;
+        var col = C.ledG;
+        if (alarm && i === 1) col = ((frame >> 3) % 2) ? C.ledR : "#5A1A1A";
+        R(x + 2, 25 + r * 4, 1, 1, on || alarm ? col : "#1F3B2A");
+        R(x + 5, 25 + r * 4, 3, 1, "#2A313C");
+      }
+    });
+    if (alarm && ((frame >> 3) % 2)) { ctx.fillStyle = "rgba(255,60,60,0.16)"; ctx.fillRect(0, 18, 46, 44); }
+    R(140, 18, 52, 46, C.carpet);
+    R(138, 18, 2, 26, C.trim); R(138, 56, 2, 10, C.trim); R(138, 64, 54, 2, C.trim);
+    R(150, 19, 32, 7, C.board); R(153, 21, 12, 1, "#2C47D8"); R(153, 23, 8, 1, "#C2362B"); R(168, 21, 10, 3, "#9AA5B4");
+    R(152, 36, 28, 11, C.table); R(152, 36, 28, 2, "#7E5A3B");
+    R(52, 20, 5, 4, C.pot); R(51, 15, 7, 6, C.leaf); R(53, 13, 3, 3, C.leaf);
+    R(112, 19, 8, 12, C.coffee); R(114, 22, 4, 3, "#8FD0FF"); R(114, 27, 3, 2, "#EDEDED");
+    desks.forEach(function (x, i) {
+      R(x, 80, 18, 8, C.desk); R(x, 80, 18, 2, C.deskTop);
+      R(x + 5, 75, 8, 6, C.mon);
+      var lit = !night || i === 3;
+      R(x + 6, 76, 6, 4, lit ? C.scrOn : C.scrOff);
+      if (lit && ((frame >> 5) % 2) && i === 3) R(x + 7, 77, 3, 1, "#1E242E");
+      R(x + 5, 90, 8, 4, C.chair);
+    });
+  }
+
+  function drawPerson(p) {
+    if (p.hidden) return;
+    var x = Math.round(p.x), y = Math.round(p.y);
+    R(x - 3, y - 11, 6, 2, p.hair);
+    R(x - 3, y - 9, 6, 3, p.skin); R(x - 3, y - 9, 1, 2, p.hair); R(x + 2, y - 9, 1, 2, p.hair);
+    R(x - 2, y - 8, 1, 1, "#1A1A1A"); R(x + 1, y - 8, 1, 1, "#1A1A1A");
+    R(x - 3, y - 6, 6, 4, p.shirt); R(x - 4, y - 6, 1, 3, p.skin); R(x + 3, y - 6, 1, 3, p.skin);
+    var walking = p.path.length > 0, alt = (p.step >> 3) % 2;
+    var lh = walking && alt ? 1 : 2, rh = walking && !alt ? 1 : 2;
+    R(x - 3, y - 2, 2, lh, "#1F2733"); R(x + 1, y - 2, 2, rh, "#1F2733");
+    if (p.id === "you") {
+      var bob = reduce ? 0 : ((frame >> 4) % 2);
+      R(x - 2, y - 17 + bob, 5, 1, "#FFD34D"); R(x - 1, y - 16 + bob, 3, 1, "#FFD34D"); R(x, y - 15 + bob, 1, 1, "#FFD34D");
+    }
+    if (p.bubble) drawBubble(x, y - 13, p.bubble);
+  }
+
+  function drawBubble(x, y, kind) {
+    if (kind === "phones") { R(x - 4, y + 2, 1, 3, "#111111"); R(x + 3, y + 2, 1, 3, "#111111"); R(x - 3, y + 1, 7, 1, "#111111"); return; }
+    var bx = x - 5, by = y - 7;
+    R(bx, by, 11, 7, "#FFFFFF"); R(bx + 4, by + 7, 2, 1, "#FFFFFF");
+    if (kind === "dots") { var d = reduce ? 3 : (frame >> 3) % 4; for (var i = 0; i < 3; i++) R(bx + 2 + i * 3, by + 3, 1, 1, i < d ? "#141A22" : "#C8CED8"); }
+    else if (kind === "alert") { R(bx + 5, by + 1, 1, 3, "#C2362B"); R(bx + 5, by + 5, 1, 1, "#C2362B"); }
+    else if (kind === "ask") { R(bx + 4, by + 1, 3, 1, "#2C47D8"); R(bx + 6, by + 2, 1, 1, "#2C47D8"); R(bx + 5, by + 3, 1, 1, "#2C47D8"); R(bx + 5, by + 5, 1, 1, "#2C47D8"); }
+    else if (kind === "talk") { R(bx + 2, by + 2, 7, 1, "#141A22"); R(bx + 2, by + 4, 5, 1, "#141A22"); }
+  }
+
+  function step() {
+    people.forEach(function (p) {
+      if (!p.path.length) return;
+      var t = p.path[0], dx = t.x - p.x, dy = t.y - p.y, d = Math.hypot(dx, dy), sp = 0.6;
+      if (d <= sp) { p.x = t.x; p.y = t.y; p.path.shift(); }
+      else { p.x += dx / d * sp; p.y += dy / d * sp; }
+      p.step++;
+    });
+  }
+
+  function draw() {
+    drawRoom();
+    people.slice().sort(function (a, b) { return a.y - b.y; }).forEach(drawPerson);
+    if (scene === "night") {
+      ctx.fillStyle = "rgba(8,12,30,0.62)"; ctx.fillRect(0, 0, 192, 108);
+      var s = byId.senior, x = desks[3];
+      R(x + 6, 76, 6, 4, C.scrOn); ctx.fillStyle = "rgba(111,224,200,0.18)"; ctx.fillRect(x - 2, 70, 22, 30);
+      drawPerson(s);
+    }
+  }
+
+  function tick() { frame++; step(); draw(); requestAnimationFrame(tick); }
+  document.querySelectorAll("[data-scene]").forEach(function (b) { b.addEventListener("click", function () { setScene(b.getAttribute("data-scene")); }); });
+  setScene("day");
+  draw();
+  if (!reduce) requestAnimationFrame(tick);
+
+  /* ================= call (visual novel) ================= */
+  var lineEl = document.getElementById("line"), choicesEl = document.getElementById("choices"), noteEl = document.getElementById("call-note"), exprEl = document.getElementById("expr");
+  var mouthClosed = document.getElementById("mouth-closed"), mouthOpen = document.getElementById("mouth-open"), mouthSmile = document.getElementById("mouth-smile");
+  var browL = document.getElementById("brow-l"), browR = document.getElementById("brow-r");
+  var typing = null, flap = null;
+
+  function setExpr(e) {
+    exprEl.textContent = e;
+    if (e === "skeptical") { browL.setAttribute("y1", "90"); browL.setAttribute("y2", "92"); browR.setAttribute("y1", "90"); browR.setAttribute("y2", "84"); }
+    else if (e === "thinking") { browL.setAttribute("y1", "88"); browL.setAttribute("y2", "86"); browR.setAttribute("y1", "86"); browR.setAttribute("y2", "88"); }
+    else { browL.setAttribute("y1", "88"); browL.setAttribute("y2", "88"); browR.setAttribute("y1", "88"); browR.setAttribute("y2", "88"); }
+    mouthSmile.setAttribute("visibility", e === "convinced" ? "visible" : "hidden");
+    mouthClosed.setAttribute("visibility", e === "convinced" ? "hidden" : "visible");
+    mouthOpen.setAttribute("visibility", "hidden");
+  }
+
+  function say(text, expr, done) {
+    clearInterval(typing); clearInterval(flap);
+    setExpr(expr);
+    if (reduce) { lineEl.textContent = text; if (done) done(); return; }
+    var i = 0; lineEl.textContent = "";
+    var open = false;
+    flap = setInterval(function () {
+      open = !open;
+      mouthOpen.setAttribute("visibility", open ? "visible" : "hidden");
+      mouthClosed.setAttribute("visibility", open || expr === "convinced" ? "hidden" : "visible");
+      mouthSmile.setAttribute("visibility", !open && expr === "convinced" ? "visible" : "hidden");
+    }, 110);
+    typing = setInterval(function () {
+      i += 2; lineEl.textContent = text.slice(0, i);
+      if (i >= text.length) { clearInterval(typing); clearInterval(flap); setExpr(expr); if (done) done(); }
+    }, 22);
+  }
+
+  var script = {
+    cache: {
+      text: "You cached the whole balance response for 30 seconds. What happens when a transfer lands inside that window?",
+      expr: "skeptical",
+      choices: [
+        { label: "Repeat: \u201cIt's fine, it's only 30 seconds.\u201d", reply: "You said that already. What did you measure?", expr: "skeptical", note: "Repeating yourself never moves a teammate. She holds her position.", tone: "bad" },
+        { label: "Ask: \u201cWhat are you worried about?\u201d", reply: "Last spring a cache like this showed stale balances for 40 minutes, and support got 300 tickets. That's what I'm guarding against.", expr: "thinking", note: "Asking finds the interest behind the pushback. Every teammate has one, and now you know what evidence would convince her.", tone: "" },
+        { label: "Show: the invalidate-on-write test and the benchmark", reply: "The test covers the transfer case and p99 dropped 38%. Approved. Add a metric for cache age before you merge.", expr: "convinced", note: "Evidence changed her mind. That's the only way it changes: evidence or a better alternative.", tone: "good" }
+      ],
+      next: "wrong", nextLabel: "Next: a pushback that's wrong"
+    },
+    wrong: {
+      text: "Don't dequeue payouts with SKIP LOCKED. Two workers can grab the same row.",
+      expr: "skeptical",
+      choices: [
+        { label: "Agree and rewrite the dequeue", reply: "Great, thanks for switching it.", expr: "convinced", note: "She was wrong, and you let it through. With FOR UPDATE SKIP LOCKED, each worker skips rows another transaction has locked, so two workers never take the same row. About 1 in 4 pushbacks is planted wrong like this, and the debrief will flag it.", tone: "bad" },
+        { label: "Push back: \u201cLocked rows are skipped, not shared. Here's the Postgres doc.\u201d", reply: "You're right. I was thinking of a plain SELECT without FOR UPDATE. Good catch.", expr: "convinced", note: "Disagreeing politely, with a source, is graded as senior behavior.", tone: "good" }
+      ],
+      next: "cache", nextLabel: "Start over"
+    }
+  };
+
+  function show(key) {
+    var node = script[key];
+    noteEl.hidden = true;
+    choicesEl.innerHTML = "";
+    say(node.text, node.expr, function () { renderChoices(node); });
+  }
+  function renderChoices(node) {
+    choicesEl.innerHTML = "";
+    node.choices.forEach(function (c, idx) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "choice"; b.id = "choice-" + idx; b.textContent = c.label;
+      b.addEventListener("click", function () {
+        choicesEl.innerHTML = "";
+        say(c.reply, c.expr, function () {
+          noteEl.textContent = c.note; noteEl.className = "note" + (c.tone ? " " + c.tone : ""); noteEl.hidden = false;
+          var n = document.createElement("button");
+          n.type = "button"; n.className = "btn"; n.id = "call-next"; n.textContent = node.nextLabel;
+          n.addEventListener("click", function () { show(node.next); });
+          choicesEl.appendChild(n);
+        });
+      });
+      choicesEl.appendChild(b);
+    });
+  }
+  setExpr("skeptical");
+  renderChoices(script.cache);
+
+  /* ================= catalog filter ================= */
+  var cards = document.querySelectorAll("#catalog .co");
+  document.querySelectorAll("[data-f]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var f = b.getAttribute("data-f");
+      document.querySelectorAll("[data-f]").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); });
+      cards.forEach(function (c) {
+        var vis = f === "all" || c.getAttribute("data-domain") === f || (f === "growth" && c.getAttribute("data-stage") === "growth");
+        c.hidden = !vis;
+      });
+    });
+  });
+})();
+</script>

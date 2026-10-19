@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.vite/
+playwright-report/
+test-results/
+
+# Runtime data (lives in OFFERLETTER_HOME, but just in case)
+.data/
+*.db
+*.db-wal
+*.db-shm
+
+# Local tools and big binaries
+*.safetensors
+*.ckpt
+tools/comfy/out/
+.env
