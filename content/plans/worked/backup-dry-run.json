@@ -1,0 +1,159 @@
+{
+  "id": "backup-dry-run",
+  "title": "How Ines planned \"--dry-run\" for a tiny backup script",
+  "lang": "python",
+  "kind": "change",
+  "narrator": "ines",
+  "toy_request_md": "**From Sam (support):** People keep asking what `snapshot` is about to do before it does it. Can you add `--dry-run`, so it lists what it *would* copy without copying anything? And the summary at the end should say how many files it skipped because they hadn't changed. Same numbers in `--json`, please — our dashboard reads that.\n\n`snapshot` is a 200-line script: `snapshot SRC DEST [--json]` copies every file under SRC to DEST unless DEST already has an identical copy.",
+  "steps": [
+    {
+      "move": "read",
+      "labels": ["find the seam", "list the callers"],
+      "think_md": "Before I plan anything I read the code path from the command line down. `cli.main` parses the flags and calls `copy_tree(src, dest)`. `copy_tree` walks the folder and calls `copy_file` for every file. The decision 'copy or skip' is made inside `copy_tree`, so that's my seam. Who calls `copy_tree`? Only `cli.main`, and one test.",
+      "false_start": {
+        "think_md": "My first instinct was `copy_file`: that's where the copying happens, so put the dry-run check there. Then I looked at what `copy_file` knows: one path and nothing else. It can't count skips and it can't list the plan. Wrong level. I moved up one function.",
+        "doc": {"read": {"seam": [{"path": "snapshot/files.py", "symbol": "copy_file"}], "callers": [], "note": ""}}
+      },
+      "doc": {
+        "read": {
+          "seam": [{"path": "snapshot/files.py", "symbol": "copy_tree"}],
+          "callers": [{"path": "snapshot/cli.py", "symbol": "main"}, {"path": "tests/test_files.py", "symbol": "test_copy_tree_skips_identical"}],
+          "note": "copy_tree decides copy vs skip; copy_file only copies one file."
+        }
+      },
+      "predict": {
+        "q_md": "Where would you put the dry-run decision?",
+        "options": [
+          {"id": "a", "text": "In `copy_file`, where the copying happens"},
+          {"id": "b", "text": "In `copy_tree`, where each file is decided", "correct": true},
+          {"id": "c", "text": "In `cli.main`, by not calling anything"}
+        ],
+        "why_md": "`copy_tree` is the only place that sees every file *and* makes the copy-or-skip call, so the count and the list both live there. `main` skipping everything would print nothing useful."
+      }
+    },
+    {
+      "move": "restate",
+      "labels": ["say it back"],
+      "think_md": "I say it back in one sentence, with a done line I could check without asking Sam.",
+      "doc": {
+        "restate": {
+          "given": "a source folder, a destination folder, and maybe --dry-run",
+          "produce": "the files copied (or, with --dry-run, the list of files that would be copied) and a summary with copied and skipped-unchanged counts",
+          "done_when": "snapshot --dry-run copies nothing, lists what it would copy, and the summary and --json both show the skipped count"
+        }
+      }
+    },
+    {
+      "move": "bridge",
+      "labels": ["real-world version", "say it to a computer"],
+      "think_md": "I picture a house move. A dry run is walking through the house with a clipboard before the truck comes: you write down every box you'd load, but you don't lift anything. Boxes that are already at the new house, unchanged, you tick as 'skip'. At the end you count both columns. Now I turn each part of that into something the program has.",
+      "doc": {
+        "bridge": {
+          "source": null,
+          "story_md": "Moving house. Before the truck arrives, someone walks through with a clipboard.",
+          "solution_md": "Walk every room. For each box: if the same box is already at the new house, tick 'skip'. Otherwise write it on the 'load' list, and only carry it if this isn't the clipboard walk. At the end, count the load list and the skip ticks and read both out.",
+          "mapping": [
+            {"id": "m1", "real": "a box", "kind": "thing", "to": {"type": "data", "id": "d-entry"}},
+            {"id": "m2", "real": "load or skip, decided per box", "kind": "thing", "to": {"type": "data", "id": "d-decision"}},
+            {"id": "m3", "real": "walk every room and decide each box", "kind": "action", "to": {"type": "step", "id": "s-plan"}},
+            {"id": "m4", "real": "carry the boxes on the load list (not on the clipboard walk)", "kind": "action", "to": {"type": "step", "id": "s-apply"}},
+            {"id": "m5", "real": "count both columns and read them out", "kind": "action", "to": {"type": "step", "id": "s-summary"}},
+            {"id": "m6", "real": "the clipboard walk never lifts a box", "kind": "rule", "to": {"type": "example", "id": "e1"}},
+            {"id": "m7", "real": "an empty house", "kind": "limit", "to": {"type": "example", "id": "e2"}}
+          ],
+          "breaks": "A real box can be half-packed; a file is either identical or not. And movers don't have a file that vanishes between the walk and the truck. Files can, so the copy step still has to cope with that."
+        }
+      },
+      "predict": {
+        "q_md": "The clipboard walk splits 'deciding' from 'carrying'. Why is that split useful here?",
+        "options": [
+          {"id": "a", "text": "Dry run = do the deciding, skip the carrying; one decision list serves both modes", "correct": true},
+          {"id": "b", "text": "It makes the copying faster"},
+          {"id": "c", "text": "It isn't useful; one loop that checks the flag on every file is simpler"}
+        ],
+        "why_md": "If deciding produces a list, dry run just prints the list and the real run carries it out. Checking the flag inside the copy loop works too, but then the count and the list are tangled into the copying."
+      }
+    },
+    {
+      "move": "examples",
+      "labels": ["happy", "boundary", "error"],
+      "think_md": "Three examples before any design, one of each kind. I predict them on the current code first: today there's no --dry-run, so the first one should error. It did, and the error told me the flag name is free.",
+      "doc": {
+        "examples": [
+          {"id": "e1", "label": "happy", "rule": "dry run copies nothing", "form": "text",
+           "text": {"given": "src has a.txt (new) and b.txt (identical copy already in dest); run with --dry-run", "expect": "prints 'would copy a.txt'; dest unchanged; summary: copied 0, would copy 1, skipped unchanged 1"},
+           "predict": "error"},
+          {"id": "e2", "label": "boundary", "rule": "empty source still prints a summary", "form": "text",
+           "text": {"given": "src is an empty folder", "expect": "summary: copied 0, skipped unchanged 0; exit code 0"},
+           "predict": "pass"},
+          {"id": "e3", "label": "error", "rule": "one unreadable file doesn't stop the rest", "form": "text",
+           "text": {"given": "src has a.txt and secret.txt that can't be read", "expect": "a.txt copied; secret.txt listed under errors; exit code 1"},
+           "predict": "fail"}
+        ]
+      }
+    },
+    {
+      "move": "pieces",
+      "labels": ["has parts", "one of", "many of"],
+      "think_md": "Nouns from Sam's message: file, summary, skipped count. A file entry has parts: its path and its size. The decision for a file is one of a fixed set: copy, skip because unchanged. I almost made 'copy' and 'skip' two separate cards, then noticed they're the options of one thing, so they go inside `Decision`. The plan is many entries with their decision.",
+      "doc": {
+        "data": [
+          {"id": "d-src", "name": "source folder", "kind": "outside", "options": [], "fields": [], "vtype": "path"},
+          {"id": "d-entry", "name": "file entry", "kind": "parts", "options": [], "fields": [{"name": "path", "type": "Path"}, {"name": "size", "type": "int"}], "vtype": "text",
+           "because": {"chip": "it has parts"}},
+          {"id": "d-decision", "name": "decision", "kind": "one_of", "options": ["copy", "skip unchanged"], "fields": [], "vtype": "text",
+           "because": {"chip": "these are the options of one choice"}},
+          {"id": "d-plan", "name": "copy plan", "kind": "many_of", "options": [], "fields": [], "item": "d-entry", "vtype": "text",
+           "because": {"text": "one row per file, each with its decision"}},
+          {"id": "d-summary", "name": "summary", "kind": "parts", "options": [], "fields": [{"name": "copied", "type": "int"}, {"name": "would_copy", "type": "int"}, {"name": "skipped_unchanged", "type": "int"}], "vtype": "text"}
+        ]
+      },
+      "predict": {
+        "q_md": "'copy' and 'skip unchanged' — two cards, or options of one?",
+        "options": [
+          {"id": "a", "text": "Two cards, they're two different things"},
+          {"id": "b", "text": "Options of one `decision`: every file gets exactly one of them", "correct": true}
+        ],
+        "why_md": "A file can't be both, and every file gets one. That's the shape of 'one of'. Two separate cards would let a file be neither or both."
+      }
+    },
+    {
+      "move": "contracts",
+      "labels": ["decide", "transform", "report"],
+      "think_md": "Three steps. `plan_copies` looks at the source and destination and gives the copy plan; it can't fail on its own. `apply_plan` changes the destination, so it's the only step that touches disk, and it can raise on an unreadable file. `summarize` reads the plan and gives the summary. With --dry-run, main skips `apply_plan`. The map shows every arrow has a source, so the steps connect.",
+      "doc": {
+        "steps": [
+          {"id": "s-plan", "label": "decide what to copy", "subgoal": "decide", "existing": {"path": "snapshot/files.py", "symbol": "copy_tree"}, "new_fn": "plan_copies", "where": "snapshot/files.py",
+           "takes": [{"data_id": "d-src", "mode": "read"}], "gives": "d-plan", "fails": "no", "awaits": false, "risky": true,
+           "because": {"text": "split out of copy_tree so dry run can stop after deciding"}},
+          {"id": "s-apply", "label": "copy the planned files", "subgoal": "transform", "existing": null, "new_fn": "apply_plan", "where": "snapshot/files.py",
+           "takes": [{"data_id": "d-plan", "mode": "read"}], "gives": null, "fails": "raises", "raises": "OSError", "awaits": false, "risky": false,
+           "because": {"chip": "only step that touches disk"}},
+          {"id": "s-summary", "label": "count copied and skipped", "subgoal": "count", "existing": null, "new_fn": "summarize", "where": "snapshot/files.py",
+           "takes": [{"data_id": "d-plan", "mode": "read"}], "gives": "d-summary", "fails": "no", "awaits": false, "risky": false}
+        ]
+      }
+    },
+    {
+      "move": "run",
+      "labels": ["walk an example"],
+      "think_md": "I walk example 1 through the steps. `plan_copies` gives two rows: a.txt copy, b.txt skip unchanged. Dry run, so `apply_plan` doesn't run. `summarize` gives copied 0, would copy 1, skipped 1. That matches what I expected. The edge case: an empty folder gives an empty plan and an all-zero summary. Fine."
+    },
+    {
+      "move": "decide",
+      "labels": ["decision", "pre-mortem", "scope"],
+      "think_md": "One real decision: split `copy_tree` into decide-then-apply instead of checking the flag inside the loop. Pre-mortem: what would make this fail on Thursday? I write three guesses, then put the riskiest step first.",
+      "doc": {
+        "decisions": [
+          {"id": "k1", "choice": "Split copy_tree into plan_copies + apply_plan", "because": "dry run then reuses the exact same decisions, and the count comes from the plan, not from the copying", "instead_of": "an `if dry_run` check inside the copy loop (rejected: the list and the count get tangled with the copying)", "would_change_if": "the folder is too big to hold the whole plan in memory", "confirmed_by": "e1"}
+        ],
+        "premortem": [
+          {"id": "p1", "text": "the JSON summary keeps the old field names and the dashboard breaks", "step_id": "s-summary"},
+          {"id": "p2", "text": "a file changes between planning and copying", "step_id": "s-apply"},
+          {"id": "p3", "text": "the existing test calls copy_tree directly and I break it", "step_id": "s-plan"}
+        ],
+        "scope": {"appetite_blocks": 3, "no_gos": ["no progress bar", "no parallel copying"], "first_slice": "e1"}
+      }
+    }
+  ]
+}

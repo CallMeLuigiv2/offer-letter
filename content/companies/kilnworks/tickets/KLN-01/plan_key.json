@@ -1,0 +1,55 @@
+{
+  "_note": "SERVER-ONLY, like answer_key.json. Used to rank plan-review questions, to say which KINDS of behaviour his examples don't cover yet (never the cases themselves), to read his pre-mortem against known traps, and for the drift report. Never shown verbatim.",
+  "seam": [
+    {"path": "src/kiln_bench/openloop.py", "symbol": "OpenLoopRunner.run"},
+    {"path": "src/kiln_bench/openloop.py", "symbol": "OpenLoopRunner._fire"},
+    {"path": "src/kiln_bench/records.py", "symbol": "RequestRecord.ttft_s"},
+    {"path": "src/kiln_bench/records.py", "symbol": "RequestRecord.e2e_s"},
+    {"path": "src/kiln_bench/metrics.py", "symbol": "percentile"},
+    {"path": "src/kiln_bench/metrics.py", "symbol": "summarize"},
+    {"path": "src/kiln_bench/report.py", "symbol": "render_text"},
+    {"path": "src/kiln_bench/report.py", "symbol": "render_json"},
+    {"path": "src/kiln_bench/cli.py", "symbol": "build_parser"},
+    {"path": "src/kiln_bench/cli.py", "symbol": "_run"}
+  ],
+  "callers": [
+    {"path": "src/kiln_bench/cli.py", "symbol": "_run"},
+    {"path": "src/kiln_bench/cli.py", "symbol": "_print_summary"},
+    {"path": "src/kiln_bench/cli.py", "symbol": "_cmd_run"},
+    {"path": "src/kiln_bench/metrics.py", "symbol": "percentiles"}
+  ],
+  "behaviours": [
+    {"id": "b-schedule", "kind_md": "a run through a server pause: every scheduled request is counted, and the pause shows up in the middle and high percentiles"},
+    {"id": "b-errors", "kind_md": "requests that time out or get an HTTP error are counted as errors, not left out"},
+    {"id": "b-stall-tail", "kind_md": "one slow request at the end of a short run still shows up in the top percentile"},
+    {"id": "b-clock", "kind_md": "the wall clock changing during a run doesn't change measured latencies"},
+    {"id": "b-p999", "kind_md": "p99.9 appears in the text report and in the JSON summary"},
+    {"id": "b-late", "kind_md": "late sends: an integer in the JSON summary and a line in the text report of a --rate run"},
+    {"id": "b-cap", "kind_md": "--max-in-flight: its default, one warning the first time the cap is reached and none when it isn't, and waiting for a slot still counts from the scheduled time"},
+    {"id": "b-concurrency", "kind_md": "--concurrency keeps its old meaning for closed-loop runs"},
+    {"id": "b-regression", "kind_md": "at least one of his tests fails on Theo's original branch"}
+  ],
+  "traps": [
+    {"id": "t-origin", "tag": "latency-origin", "md": "measuring latency from when the request actually went out instead of when it was scheduled, so time stuck behind a stall disappears"},
+    {"id": "t-reanchor", "tag": "schedule-reanchor", "md": "restarting the schedule from 'now' after falling behind, which quietly turns the open loop back into a closed loop"},
+    {"id": "t-cap-wait", "tag": "cap-wait", "md": "not counting the time a request waits for a free in-flight slot"},
+    {"id": "t-warn-spam", "tag": "warning-once", "md": "printing the max-in-flight warning on every send, or never"},
+    {"id": "t-drop-failures", "tag": "failures-dropped", "md": "leaving failed or timed-out requests out of the results, which hides the slowest requests"},
+    {"id": "t-wall-clock", "tag": "wall-clock", "md": "timing with a clock that can jump (time.time) instead of a monotonic one"},
+    {"id": "t-rank", "tag": "percentile-rank", "md": "rounding the percentile rank down, so the top value never reaches p99 in small runs"},
+    {"id": "t-tests-pass-anyway", "tag": "weak-tests", "md": "tests that would also pass on Theo's branch, so they don't prove the fixes"},
+    {"id": "t-concurrency", "tag": "flag-meaning", "md": "changing what --concurrency means for closed-loop runs while adding --max-in-flight"}
+  ],
+  "expected_files": [
+    "src/kiln_bench/cli.py",
+    "src/kiln_bench/loadgen.py",
+    "src/kiln_bench/metrics.py",
+    "src/kiln_bench/openloop.py",
+    "src/kiln_bench/records.py",
+    "src/kiln_bench/report.py",
+    "tests/test_cli.py",
+    "tests/test_metrics.py",
+    "tests/test_openloop.py",
+    "tests/test_report.py"
+  ]
+}

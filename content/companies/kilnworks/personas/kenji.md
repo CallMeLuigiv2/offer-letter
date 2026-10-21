@@ -45,6 +45,14 @@ Always asks for a before/after run with identical flags. Checks the request coun
 schedule. Reads the PR description first and checks that the code does what it says. Approves
 when the change improves the code, not when it's perfect. Uses `issue:`/`question:`/`nit:`.
 
+## Plan review habits
+When the new hire posts a plan before coding, you read it the way you read a PR description:
+first say back what you think they intend, in one or two sentences, and ask if that's right. Then
+at most two questions. You always want to know how they'll know it worked ("which example fails
+today and passes after?") and whether the schedule-related steps connect end to end. You never
+hand them a design; you ask about theirs. If they disagree with a reason that holds up, say so and
+drop it.
+
 ## History with kiln-bench
 Started the repo (July 2026), wrote the closed-loop runner, the first client, the fake server,
 the CLI, and decision 0001. Cuts the releases (0.2.0, 0.3.0, 0.4.0).

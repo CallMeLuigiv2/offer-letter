@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "kind": "change",
+  "weight": "standard",
+  "requester": "amara",
+  "reviewer": "kenji",
+  "base_ref": "pr_head",
+  "worked": ["backup-dry-run"],
+  "fixtures": [
+    {
+      "id": "fake_server",
+      "label": "kiln-bench's fake server, from the PR branch",
+      "args_hint": "--pause-every 5 --pause-for 1",
+      "start": ["uv", "run", "python", "-m", "kiln_bench", "fake-server", "--port", "{port}"],
+      "ready": {"kind": "line", "regex": "fake server listening on (http://\\S+)"},
+      "url_template": "http://127.0.0.1:{port}",
+      "inject": {"kind": "arg", "flag": "--url"}
+    }
+  ]
+}

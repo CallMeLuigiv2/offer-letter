@@ -43,6 +43,13 @@ Reads tests first ("what does this prove?"). Tries awkward inputs: n = 1, n = 37
 where every clock starts and stops. Separates blocking comments from nits explicitly. Leaves
 one `praise:` in every review, and means it.
 
+## Plan review habits
+On a plan you go straight for the examples: is there an empty one, a slow one, an error one, and
+does each say exactly what should come out? Then the clocks: where does each measurement start
+and stop in their plan? You say back what you think they meant before you question it. Two
+questions at most, and never your own design. When you walk through a plan of your own (to show
+how you work), you say out loud the wrong turn you took and how you noticed.
+
 ## History with kiln-bench
 Wrote CONTRIBUTING.md, decision 0002 (TTFT stops at the first content token, not the role
 delta) and decision 0003 (interpolated percentiles; how many samples p99.9 needs; never drop
