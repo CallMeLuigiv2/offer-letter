@@ -34,7 +34,7 @@
     {
       "id": "c2",
       "title": "When customers walk in",
-      "function": "openloop.py · PoissonArrivals.next_gap, ConstantArrivals.next_gap",
+      "function": "openloop.py · PoissonArrivals.next_gap, ConstantArrivals.next_gap  (--arrival in cli.py · build_parser, _run)",
       "background": "bakery-front",
       "beats": [
         {"who": "theo", "expression": "neutral", "say": "Customers don't arrive like clockwork. With Poisson arrivals, the gap before the next customer is random, but it averages out.",
@@ -42,8 +42,9 @@
         {"who": "theo", "expression": "thinking", "say": "In code that's random dot expovariate of the rate. Give it forty, and the gaps average one fortieth of a second.",
          "caption": "In code that's random.expovariate(rate). Give it 40, and the gaps average 1/40 of a second.",
          "visual": "Code label 'self.rng.expovariate(self.rate)'. A gap ruler shows '≈ 25 ms average'."},
-        {"who": "theo", "expression": "neutral", "say": "With constant arrivals, every gap is exactly one over the rate. That one is easier to test.",
-         "visual": "The dots rearrange into an evenly spaced row. Label 'constant: 1 / rate'."}
+        {"who": "theo", "expression": "neutral", "say": "With dash dash arrival constant, every gap is exactly one over the rate. That one is easier to test.",
+         "caption": "With --arrival constant, every gap is exactly 1 / rate. That one is easier to test.",
+         "visual": "A flag chip '--arrival constant' appears; the dots rearrange into an evenly spaced row. Label 'constant: 1 / rate'."}
       ],
       "question": {"id": "h2", "kind": "predict", "who": "theo",
         "prompt": "Poisson arrivals at forty per second. What's the average gap between customers?",
@@ -83,15 +84,18 @@
     {
       "id": "c4",
       "title": "One order's trip",
-      "function": "openloop.py · OpenLoopRunner._fire   →   records.py · RequestRecord.ttft_s, e2e_s",
+      "function": "openloop.py · OpenLoopRunner._fire → records.py · RequestRecord  (sent_at stamped in client.py · StreamClient.stream_chat)",
       "background": "bakery-kitchen",
       "beats": [
         {"who": "theo", "expression": "neutral", "say": "Every order gets a slip. When the order is created, the slip gets its due time: intended at.",
          "caption": "Every order gets a slip. When the order is created, the slip gets its due time: intended_at.",
          "visual": "An order slip card with a field 'due (intended_at): 2.0 s'."},
-        {"who": "theo", "expression": "neutral", "say": "When the dispatcher hands it to the kitchen, the slip gets sent at.",
-         "caption": "When the dispatcher hands it to the kitchen, the slip gets sent_at.",
+        {"who": "theo", "expression": "neutral", "say": "When the client's stream chat hands it to the kitchen, the slip gets sent at.",
+         "caption": "When the client's stream_chat hands it to the kitchen, the slip gets sent_at.",
          "visual": "The slip gains 'handed over (sent_at): 2.6 s'."},
+        {"who": "theo", "expression": "neutral", "say": "Older books called that field start. They still open: from json reads start as sent at.",
+         "caption": "Older books called that field start. They still open: from_json reads start as sent_at.",
+         "visual": "An older, yellowed book opens; on its slip the label 'start' turns into 'sent_at'. Code label 'sent_at=data.get(\"sent_at\", data.get(\"start\"))'."},
         {"who": "theo", "expression": "neutral", "say": "The first loaf out of the oven gives time to first token, T T F T. The last loaf gives end to end.",
          "caption": "The first loaf out of the oven gives time to first token, TTFT. The last loaf gives end to end, E2E.",
          "visual": "First loaf at 2.65 s, last loaf at 2.75 s marked on a small timeline under the slip."},
@@ -134,11 +138,14 @@
     {
       "id": "c6",
       "title": "Closing time",
-      "function": "openloop.py · OpenLoopRunner.run (the end of the loop)",
+      "function": "openloop.py · OpenLoopRunner.run (the end of the loop)  cli.py · _cmd_run (--rate needs --duration)",
       "background": "bakery-front",
       "beats": [
         {"who": "theo", "expression": "neutral", "say": "At twenty seconds the dispatcher stops taking orders.",
          "visual": "A 'closed' sign flips at t = 20 s on the timeline."},
+        {"who": "theo", "expression": "neutral", "say": "A run on a schedule always ends on the clock. Ask for dash dash rate with dash dash requests, and kiln-bench turns it down and asks for dash dash duration instead.",
+         "caption": "A run on a schedule always ends on the clock. Ask for --rate with --requests, and _cmd_run turns it down and asks for --duration instead.",
+         "visual": "A small terminal card: '$ kiln-bench run --rate 10 --requests 5' then '--rate runs on a schedule; bound it with --duration, not --requests' (exit 2)."},
         {"who": "theo", "expression": "neutral", "say": "Some orders are still in the oven. The loop waits for all of them with gather before it closes the book.",
          "caption": "Some orders are still in the oven. The loop waits for all of them with asyncio.gather before it closes the book.",
          "visual": "Three trays still baking after closing; the dispatcher waits; their slips then go into the book. Code label 'await asyncio.gather(*self._inflight)'."},
@@ -156,10 +163,14 @@
     {
       "id": "c7",
       "title": "Reading the book: percentiles",
-      "function": "metrics.py · percentile",
+      "function": "metrics.py · summarize, percentiles, percentile, _label",
       "background": "back-office",
       "beats": [
-        {"who": "theo", "expression": "neutral", "say": "Now the clerk reads the book. To find a percentile, the slips are sorted from fastest to slowest.",
+        {"who": "theo", "expression": "neutral", "say": "Now the clerk reads the book. Summarize asks for four percentiles: p fifty, p ninety, p ninety-nine, and a new one, p ninety-nine point nine.",
+         "caption": "Now the clerk reads the book. summarize() asks for four percentiles: p50, p90, p99, and a new one, p99.9.",
+         "visual": "The book opens on the back-office desk; a clipboard lists 'p50  p90  p99  p99.9', with a small 'new' tag on p99.9."},
+        {"who": "theo", "expression": "neutral", "say": "Percentiles sorts the slips once, from fastest to slowest, and percentile reads each one off that row.",
+         "caption": "percentiles() sorts the slips once, from fastest to slowest, and percentile() reads each one off that row.",
          "visual": "Ten slips in a row, sorted ascending; nine short bars around 15 ms and one tall bar of 2 s at the end."},
         {"who": "theo", "expression": "thinking", "say": "For the ninety-ninth percentile, the clerk works out a position: point nine nine times the number of slips.",
          "caption": "For the 99th percentile, the clerk works out a position: 0.99 × the number of slips.",
@@ -205,7 +216,7 @@
     {
       "id": "c9",
       "title": "How it was tested",
-      "function": "tests/test_openloop.py",
+      "function": "tests/test_openloop.py, test_cli.py, test_metrics.py  test_records.py, test_report.py, test_loadgen.py",
       "background": "test-kitchen",
       "beats": [
         {"who": "theo", "expression": "neutral", "say": "Last, the tests. They run the open loop against the fake kitchen.",
@@ -215,6 +226,12 @@
         {"who": "theo", "expression": "neutral", "say": "The schedule test asks for fifty orders and passes with anything from forty to sixty.",
          "caption": "The schedule test asks for fifty orders and passes with anything from 40 to 60: assert 40 <= len(records) <= 60.",
          "visual": "A range bar from 40 to 60 with 50 marked in the middle."},
+        {"who": "theo", "expression": "neutral", "say": "The command line test sends forty a second for one second, and passes with thirty orders or more.",
+         "caption": "The command-line test sends 40 a second for one second, and passes with 30 or more: assert summary[\"requests\"] >= 30.",
+         "visual": "A second range bar, from 30 upward, with 40 marked. Label 'test_cli.py'."},
+        {"who": "theo", "expression": "neutral", "say": "The other test files follow the rename to sent at, and check nearest rank on a hundred slips and p ninety-nine point nine on a thousand.",
+         "caption": "The other test files follow the rename to sent_at, and check nearest rank on 100 slips and p99.9 on 1,000.",
+         "visual": "Cards for test_metrics.py, test_records.py, test_report.py and test_loadgen.py flip past, each with a green tick."},
         {"who": "theo", "expression": "neutral", "say": "The fake kitchen can stall on purpose, with pause every and pause for. These tests leave that switch off.",
          "caption": "The fake kitchen can stall on purpose, with pause_every_s and pause_s. These tests leave that switch off.",
          "visual": "A 'stall' switch on the oven, in the off position."},

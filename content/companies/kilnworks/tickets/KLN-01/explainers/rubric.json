@@ -59,7 +59,8 @@
     "w4": {
       "kind": "open", "topic": "Failed orders",
       "key_ideas": [
-        {"idea": "a failed or timed-out order still goes in the book, marked as failed (with what went wrong and when it ended)", "must": true},
+        {"idea": "a failed or timed-out order still goes in the book, marked as failed", "must": true},
+        {"idea": "the slip notes what went wrong and when it ended", "must": false},
         {"idea": "it counts as an error and stays in the request count", "must": false}
       ],
       "accepted": ["record it as an error", "keep the slip with an error note", "count timeouts as errors"],
