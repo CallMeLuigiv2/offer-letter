@@ -27,3 +27,8 @@ tools/comfy/out/
 
 # Spike renders
 docs/spikes/*/media/
+
+# Rendered explainer media (regenerate with tools/explainer)
+content/companies/*/tickets/*/explainers/*/media/
+tools/explainer/cache/
+tools/explainer/media/

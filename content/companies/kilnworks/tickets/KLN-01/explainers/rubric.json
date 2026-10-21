@@ -1,0 +1,135 @@
+{
+  "_note": "SERVER-ONLY (like answer_key.json). Predict questions: the correct option and what to say after he answers. Open questions: what the grader looks for (bakery terms, never code), accepted alternatives, common wrong ideas with the branch clip each one plays, the model answer for 'show me', and how an accepted answer seeds the Plan's bridge move.",
+  "questions": {
+    "h1": {"kind": "predict", "correct": "a", "reveal_md": "Only the four already in the oven. The runners can't take new orders while they wait, so nobody else gets timed during the stall. That's why Theo wrote the open loop."},
+    "h2": {"kind": "predict", "correct": "a", "reveal_md": "25 ms. `expovariate` takes the rate, so the mean gap is 1/40 of a second."},
+    "h3": {"kind": "predict", "correct": "b", "reveal_md": "About 670, the number in Theo's PR description. While the dispatcher waited for a tray, no orders went out, and the schedule picked up again from the moment a tray came back."},
+    "h4": {"kind": "predict", "correct": "b", "reveal_md": "50 ms. Both stopwatches run from `sent_at`, the moment the order was handed over."},
+    "h5": {"kind": "predict", "correct": "b", "reveal_md": "0 errors, and those three orders aren't in the request count either: their slips never reached the book."},
+    "h6": {"kind": "predict", "correct": "a", "reveal_md": "The dispatcher waits for them. They were sent before closing, so they go in the book with their times."},
+    "h7": {"kind": "predict", "correct": "b", "reveal_md": "About 15 ms. 9.9 becomes 9 under `int()`, and the ninth slip is one of the fast ones."},
+    "h8": {"kind": "predict", "correct": "a", "reveal_md": "About minus one hour: the second reading is an hour earlier than the first."},
+    "h9": {"kind": "predict", "correct": "a", "reveal_md": "Only calm days: the stall switch stays off in every open-loop test."},
+
+    "w1": {
+      "kind": "open", "topic": "When the stopwatch starts",
+      "key_ideas": [
+        {"idea": "start each order's stopwatch at the time it was DUE (its place on the schedule), not when it was handed over", "must": true},
+        {"idea": "when there is no schedule (the old four runners), fall back to the handover time", "must": false}
+      ],
+      "accepted": ["start timing when the customer arrived / was supposed to be served", "subtract the due time instead of the handover time", "use the scheduled time as the start"],
+      "wrong_ideas": [
+        {"id": "faster", "idea": "hand orders over faster, add staff at the door, or make the dispatcher quicker (it still measures from the handover)", "branch": "w1-faster"},
+        {"idea": "only time the baking, or subtract a fixed amount for the door"}
+      ],
+      "model_answer_md": "Start every order's stopwatch at the time it was **due**, its place on the schedule, not when it was handed over. If there was no schedule (the old four runners), the handover is the start.",
+      "bridge": {"kind": "rule", "real": "the stopwatch starts when the order was due"}
+    },
+    "w2": {
+      "kind": "open", "topic": "Keeping the schedule",
+      "key_ideas": [
+        {"idea": "the dispatcher never stops taking orders at their due time, even when every tray is out", "must": true},
+        {"idea": "an order with no free tray waits in line for one itself (the waiting happens per order, not at the door)", "must": true},
+        {"idea": "the next due time comes from the plan (the last due time plus the gap), not from 'now'", "must": false},
+        {"idea": "orders that went out late can be counted", "must": false}
+      ],
+      "accepted": ["queue the orders and keep the schedule running", "a helper waits for trays so the dispatcher doesn't", "fix the whole schedule in advance and send each order at its time"],
+      "wrong_ideas": [
+        {"id": "more-trays", "idea": "get more trays / raise the cap (a long enough stall still fills them)", "branch": "w2-more-trays"},
+        {"id": "skip", "idea": "turn away or skip customers who come while the trays are out", "branch": "w2-skip"},
+        {"idea": "have the dispatcher wait longer at the door"}
+      ],
+      "model_answer_md": "Keep the schedule no matter what: take each order exactly when it's due. If no tray is free, **the order** waits in line for one, not the dispatcher. The next due time is the last due time plus the gap, never \"now plus the gap\", so nobody due during a stall is skipped.",
+      "bridge": {"kind": "action", "real": "take every order at its due time; an order with no tray waits for one"}
+    },
+    "w3": {
+      "kind": "open", "topic": "Picking the percentile slip",
+      "key_ideas": [
+        {"idea": "round the position UP (9.9 becomes 10), so the clerk takes the tenth slip, the slow one", "must": true},
+        {"idea": "positions that are only a hair above a whole number from rounding noise (like 999.0000000000001) should count as that whole number", "must": false}
+      ],
+      "accepted": ["ceil instead of int", "take the 10th slip", "round up the rank"],
+      "wrong_ideas": [
+        {"id": "average", "idea": "average the slowest few slips, or interpolate between slips", "branch": "w3-average"},
+        {"idea": "always add one to the rounded-down position (wrong when the position is already whole, e.g. 99.0 for 100 slips)"}
+      ],
+      "model_answer_md": "Round the position **up**, not down: 9.9 becomes 10, so the clerk takes the tenth slip, the two-second one. Watch out for positions that are a hair over a whole number from rounding noise, like 999.0000000000001, which should count as 999.",
+      "bridge": {"kind": "rule", "real": "round the percentile position up"}
+    },
+    "w4": {
+      "kind": "open", "topic": "Failed orders",
+      "key_ideas": [
+        {"idea": "a failed or timed-out order still goes in the book, marked as failed (with what went wrong and when it ended)", "must": true},
+        {"idea": "it counts as an error and stays in the request count", "must": false}
+      ],
+      "accepted": ["record it as an error", "keep the slip with an error note", "count timeouts as errors"],
+      "wrong_ideas": [
+        {"id": "retry", "idea": "retry the order until it succeeds", "branch": "w4-retry"},
+        {"idea": "throw it away but log it louder"}
+      ],
+      "model_answer_md": "Every order goes in the book. A burnt one gets its slip marked *failed: timeout* with the time it ended, so the errors line counts it and the request count stays honest.",
+      "bridge": {"kind": "rule", "real": "every order goes in the book, failed ones marked as errors"}
+    },
+    "w5": {
+      "kind": "open", "topic": "Which clock",
+      "key_ideas": [
+        {"idea": "time waits with a stopwatch that only moves forward (a monotonic clock), never the wall clock", "must": true},
+        {"idea": "if the logs need to line up, note the wall-clock time once at the start of the run", "must": false}
+      ],
+      "accepted": ["perf_counter", "monotonic clock", "use RunClock's default"],
+      "wrong_ideas": [
+        {"id": "sync", "idea": "sync the wall clock more often, or use UTC (still a wall clock that can be stepped)", "branch": "w5-sync"}
+      ],
+      "model_answer_md": "Time every wait with a stopwatch that only goes forward, never the wall clock. If someone needs to match the gateway's logs, note the wall-clock time **once** when the day starts and add the stopwatch offsets to it.",
+      "bridge": {"kind": "rule", "real": "waits are timed with a stopwatch that only goes forward"}
+    },
+    "w6": {
+      "kind": "open", "topic": "A trial that proves it",
+      "key_ideas": [
+        {"idea": "a trial day where the oven stalls on purpose", "must": true},
+        {"idea": "at a constant rate, so you know exactly how many orders were due, and check every due order is in the book", "must": false},
+        {"idea": "check the stall shows up in the high percentiles", "must": false},
+        {"idea": "it should fail on Theo's dispatcher and pass on the fixed one", "must": false}
+      ],
+      "accepted": ["use the fake server's pause_every / pause_for", "count must equal rate × duration"],
+      "wrong_ideas": [
+        {"id": "longer", "idea": "run the calm trial longer, or with more requests", "branch": "w6-longer"},
+        {"idea": "more small tests of the parts without a stall"}
+      ],
+      "model_answer_md": "Run a trial day where the oven stalls on purpose, at a constant rate so you know exactly how many orders were due. Check every due order is in the book and that the stall shows up in the high percentiles. Make sure the trial **fails** on Theo's version.",
+      "bridge": {"kind": "limit", "real": "a trial day with a stall: every due order in the book, the stall in the top percentiles"}
+    },
+    "w7": {
+      "kind": "open", "topic": "Counting late orders",
+      "key_ideas": [
+        {"idea": "for each order, compare when it actually left the dispatcher with when it was due", "must": true},
+        {"idea": "count the ones that left more than 10 ms after their due time", "must": true},
+        {"idea": "show the count in both the summary (JSON) and the report", "must": false}
+      ],
+      "accepted": ["sent minus scheduled > 10 ms", "compare departure time to the schedule"],
+      "wrong_ideas": [
+        {"id": "slowbake", "idea": "count orders that took a long time to bake / slow responses", "branch": "w7-slowbake"},
+        {"idea": "count only the orders that waited for a tray"}
+      ],
+      "model_answer_md": "For every order, compare when it actually left the dispatcher with when it was due. If it left more than 10 ms late, count it. Put the count in the book's summary and print it in the report.",
+      "bridge": {"kind": "action", "real": "count orders that left more than 10 ms after they were due"}
+    },
+    "w8": {
+      "kind": "open", "topic": "Running out of trays",
+      "key_ideas": [
+        {"idea": "the dispatcher keeps the schedule; an order that finds no free tray waits for one", "must": true},
+        {"idea": "that order's wait still counts from its due time", "must": false},
+        {"idea": "one note/warning the first time trays run out, none if they never do", "must": true},
+        {"idea": "the tray limit is its own setting, separate from the closed loop's runners", "must": false}
+      ],
+      "accepted": ["warn once", "queue for a tray but keep the clock from the due time"],
+      "wrong_ideas": [
+        {"id": "stop", "idea": "stop taking customers until a tray is free", "branch": "w8-stop"},
+        {"idea": "warn on every order that waits"},
+        {"idea": "drop the order when no tray is free"}
+      ],
+      "model_answer_md": "The dispatcher keeps taking orders on schedule. An order that finds no free tray waits in line for one, and its stopwatch still started at its due time. The first time that happens, pin **one** note on the board, and never more than one.",
+      "bridge": {"kind": "rule", "real": "no free tray: the order waits, its clock already running; one note the first time"}
+    }
+  }
+}

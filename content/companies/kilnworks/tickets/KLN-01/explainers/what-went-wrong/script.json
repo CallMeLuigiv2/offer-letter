@@ -1,0 +1,684 @@
+{
+  "id": "what-went-wrong",
+  "ticket": "KLN-01",
+  "title": "What goes wrong, and Amara's asks",
+  "unlock": "after_review",
+  "mode": "explain",
+  "_mode_note": "Unlocks once his review is submitted (D14). Each issue chapter: the failure in the bakery, then exactly where it lives in the code (real lines highlighted), then an open question answered in BAKERY terms. The video never shows fixed code: the code is his to write. Accepted answers become the Plan's bridge (real-world) move. The player orders issue chapters with the ones he missed in review first (chapter field 'issue').",
+  "narrator": "ines",
+  "chapters": [
+    {
+      "id": "w0",
+      "title": "How this works",
+      "background": "bakery-front",
+      "beats": [
+        {
+          "who": "ines",
+          "expression": "neutral",
+          "say": "Hi Luigi, it's Ines. Your review is in, so now we can talk about what goes wrong in Theo's dispatcher, one problem at a time.",
+          "visual": "Ines's card slides in; title card 'What goes wrong, and Amara's asks'."
+        },
+        {
+          "who": "ines",
+          "expression": "thinking",
+          "say": "For each one, I'll show it in the bakery first, then exactly where it lives in the code. Then I'll ask how you'd fix it in the bakery. Not in code yet.",
+          "visual": "Three small icons in a row: bakery → code → your answer."
+        },
+        {
+          "who": "ines",
+          "expression": "happy",
+          "say": "Your answers become the real-world part of your plan, so take your time with them.",
+          "visual": "The answer icon slides into a 'Your plan' card."
+        }
+      ]
+    },
+    {
+      "id": "w1",
+      "issue": "KLN01-1",
+      "title": "The stopwatch starts at the handover",
+      "function": "records.py · RequestRecord.ttft_s, e2e_s",
+      "code": {
+        "file": "src/kiln_bench/records.py",
+        "ref": "pr_head",
+        "lines": [
+          37,
+          46
+        ],
+        "highlight": [
+          38,
+          40,
+          44,
+          46
+        ],
+        "also": {
+          "note": "intended_at is stored on the slip (line 19) and nothing reads it",
+          "lines": [
+            19,
+            20
+          ]
+        }
+      },
+      "background": "bakery-kitchen",
+      "beats": [
+        {
+          "who": "ines",
+          "expression": "neutral",
+          "say": "Remember the slip: due at two seconds, handed over at two point six, first loaf at two point six five.",
+          "visual": "The order slip from 'How it works' with due 2.0, handed 2.6, first loaf 2.65."
+        },
+        {
+          "who": "ines",
+          "expression": "concerned",
+          "say": "The customer started waiting at two seconds. They felt six hundred and fifty milliseconds.",
+          "visual": "A customer at the counter; a bracket 2.0 → 2.65 labelled 'what the customer felt: 650 ms'."
+        },
+        {
+          "who": "ines",
+          "expression": "skeptical",
+          "say": "The book says fifty, because the stopwatch starts at the handover. The six hundred milliseconds stuck at the door vanish.",
+          "visual": "A second bracket 2.6 → 2.65 labelled 'what the book says: 50 ms'; the 2.0 → 2.6 span fades out."
+        },
+        {
+          "who": "ines",
+          "expression": "thinking",
+          "say": "That wait at the door is exactly what the open loop was built to catch. On a stall day, those waits are the whole story.",
+          "visual": "Many slips stacked, each with a faded door-wait span."
+        },
+        {
+          "who": "ines",
+          "expression": "neutral",
+          "say": "Here it is in the code. T T F T and E2E subtract sent at. The slip also carries intended at, and nothing reads it.",
+          "caption": "Here it is in the code: ttft_s and e2e_s subtract sent_at. The slip also carries intended_at, and nothing reads it.",
+          "visual": "Code panel of records.py lines 37–46 with the two subtraction lines highlighted, then a dim highlight on the intended_at field with the note 'never read'."
+        }
+      ],
+      "question": {
+        "id": "w1",
+        "kind": "open",
+        "who": "ines",
+        "prompt": "In the bakery: how would you time each order so the book matches what the customer felt?",
+        "branches": [
+          {
+            "id": "w1-faster",
+            "beats": [
+              {
+                "who": "ines",
+                "expression": "thinking",
+                "say": "Let's try that: more staff at the door, so orders are handed over sooner.",
+                "visual": "Extra staff tokens at the door; on a normal day slips get handed over almost on time."
+              },
+              {
+                "who": "ines",
+                "expression": "concerned",
+                "say": "Now the oven stalls. Every tray is out, so orders still wait at the door, however many staff we have.",
+                "visual": "Stall band; trays full; orders pile up at the door."
+              },
+              {
+                "who": "ines",
+                "expression": "skeptical",
+                "say": "And the stopwatch still starts at the handover, so that wait still vanishes from the book.",
+                "visual": "The door-wait span fades again; 'what the book says' stays small."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "w2",
+      "issue": "KLN01-2",
+      "title": "The dispatcher stops at the door",
+      "function": "openloop.py · OpenLoopRunner.run   (and cli.py · _run: max_in_flight=args.concurrency)",
+      "code": {
+        "file": "src/kiln_bench/openloop.py",
+        "ref": "pr_head",
+        "lines": [
+          86,
+          99
+        ],
+        "highlight": [
+          93,
+          98
+        ],
+        "also": {
+          "file": "src/kiln_bench/cli.py",
+          "lines": [
+            107,
+            114
+          ],
+          "highlight": [
+            112
+          ]
+        }
+      },
+      "background": "bakery-kitchen",
+      "beats": [
+        {
+          "who": "ines",
+          "expression": "neutral",
+          "say": "On the stall day, all four trays go into the oven and stay there.",
+          "visual": "Four trays fill and stop moving; stall band."
+        },
+        {
+          "who": "ines",
+          "expression": "concerned",
+          "say": "The dispatcher waits at the door for a tray. While it waits it takes no orders, even though customers keep coming.",
+          "visual": "Customers queue outside, drawn greyed; the dispatcher's 'waiting' clock runs."
+        },
+        {
+          "who": "ines",
+          "expression": "skeptical",
+          "say": "When a tray comes back, it sets the next due time to now plus a gap. The customers who came during the wait are never served and never counted.",
+          "visual": "The next due marker jumps to 'now + gap'; the grey customers fade away; a counter shows '≈ 670 of 800 due'."
+        },
+        {
+          "who": "ines",
+          "expression": "thinking",
+          "say": "Those are the slowest moments of the day, and they're the ones missing from the book. It's the closed loop's problem again, one level down.",
+          "visual": "Side by side: old four runners vs the new loop, both with the stall missing from the book."
+        },
+        {
+          "who": "ines",
+          "expression": "neutral",
+          "say": "In the code, the loop awaits a free slot before it creates the task, then sets next at to now plus the gap. And with the tray count borrowed from dash dash concurrency, four trays run out on an ordinary busy day too.",
+          "caption": "In the code, the loop awaits a free slot before it creates the task, then sets next_at to now plus the gap. And with the tray count borrowed from --concurrency, four trays run out on an ordinary busy day too.",
+          "visual": "Code panel openloop.py 86–99 with 'await self._slots.acquire()' and 'next_at = self.clock() + …' highlighted; then cli.py with 'max_in_flight=args.concurrency' highlighted."
+        }
+      ],
+      "question": {
+        "id": "w2",
+        "kind": "open",
+        "who": "ines",
+        "prompt": "In the bakery: how would you keep serving every customer on schedule, even when all the trays are out?",
+        "branches": [
+          {
+            "id": "w2-more-trays",
+            "beats": [
+              {
+                "who": "ines",
+                "expression": "thinking",
+                "say": "Let's try more trays. Twenty of them. On a normal day, that's plenty.",
+                "visual": "Twenty tray slots; orders flow freely."
+              },
+              {
+                "who": "ines",
+                "expression": "concerned",
+                "say": "Now the oven stalls for a full second, at forty customers a second. Twenty trays are full in half a second.",
+                "visual": "Stall band; the twenty trays fill in 0.5 s."
+              },
+              {
+                "who": "ines",
+                "expression": "skeptical",
+                "say": "And the dispatcher stops at the door again. More trays only move the moment it happens.",
+                "visual": "Dispatcher waiting; grey customers queue; 'orders sent' stalls."
+              }
+            ]
+          },
+          {
+            "id": "w2-skip",
+            "beats": [
+              {
+                "who": "ines",
+                "expression": "thinking",
+                "say": "Let's try turning customers away while the trays are out.",
+                "visual": "A 'come back later' sign at the door during the stall."
+              },
+              {
+                "who": "ines",
+                "expression": "concerned",
+                "say": "The book looks calm now. But those customers had the worst wait of the day, and not one of them is in it.",
+                "visual": "The book's waits all short; the turned-away customers drawn outside the book."
+              },
+              {
+                "who": "ines",
+                "expression": "skeptical",
+                "say": "That's what the dispatcher already does. The schedule stopped, and the stall disappeared from the numbers.",
+                "visual": "Counter '≈ 670 of 800'."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "w3",
+      "issue": "KLN01-3",
+      "title": "The clerk rounds down",
+      "function": "metrics.py · percentile",
+      "code": {
+        "file": "src/kiln_bench/metrics.py",
+        "ref": "pr_head",
+        "lines": [
+          19,
+          30
+        ],
+        "highlight": [
+          28,
+          29
+        ]
+      },
+      "background": "back-office",
+      "beats": [
+        {
+          "who": "ines",
+          "expression": "neutral",
+          "say": "Ten slips, one of them two seconds. The clerk computes nine point nine, int rounds it down to nine, and takes the ninth slip: about fifteen milliseconds.",
+          "caption": "Ten slips, one of them two seconds. The clerk computes 9.9, int() rounds it down to 9, and takes the ninth slip: about 15 ms.",
+          "visual": "The sorted row of ten slips; 9.9 → 9; the finger on slip 9."
+        },
+        {
+          "who": "ines",
+          "expression": "thinking",
+          "say": "Nearest rank means the smallest slip that at least ninety-nine percent of slips are at or below. For ten slips that's position ten: the two-second stall.",
+          "caption": "Nearest rank means the smallest slip that at least 99% of slips are at or below. For ten slips that's position 10: the two-second stall.",
+          "visual": "Position 10 highlights; the 2 s bar glows."
+        },
+        {
+          "who": "ines",
+          "expression": "skeptical",
+          "say": "So one slow order in a small sample never reaches p ninety-nine. The tests use a hundred and a thousand slips, where the position is already a whole number, so they can't see it. Decision three even warned about this.",
+          "caption": "So one slow order in a small sample never reaches p99. The tests use 100 and 1000 slips, where the position is already a whole number, so they can't see it. Decision 0003 even warned about this.",
+          "visual": "n = 100: 0.99 × 100 = 99.0 (whole); n = 37: 36.63 (not whole). A quote card from decision 0003: 'right for n = 100 and wrong for n = 37'."
+        },
+        {
+          "who": "ines",
+          "expression": "neutral",
+          "say": "In the code: rank equals int of q over a hundred, times n.",
+          "caption": "In the code: rank = int(q / 100 * len(sorted_values)).",
+          "visual": "Code panel metrics.py 19–30 with the rank line highlighted."
+        }
+      ],
+      "question": {
+        "id": "w3",
+        "kind": "open",
+        "who": "ines",
+        "prompt": "In the bakery: how should the clerk pick the slip for the 99th percentile out of ten?",
+        "branches": [
+          {
+            "id": "w3-average",
+            "beats": [
+              {
+                "who": "ines",
+                "expression": "thinking",
+                "say": "Let's try averaging the slowest few slips instead.",
+                "visual": "The last three slips merge into one averaged bar."
+              },
+              {
+                "who": "ines",
+                "expression": "skeptical",
+                "say": "The stall gets blended with fast slips, and the number is a wait nobody actually had. The customer who waited two seconds is still missing.",
+                "visual": "The averaged bar sits far below the 2 s slip; label 'a wait nobody had'."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "w4",
+      "issue": "KLN01-4",
+      "title": "Burnt orders go in the bin",
+      "function": "openloop.py · OpenLoopRunner._fire",
+      "code": {
+        "file": "src/kiln_bench/openloop.py",
+        "ref": "pr_head",
+        "lines": [
+          106,
+          115
+        ],
+        "highlight": [
+          110,
+          111,
+          112
+        ]
+      },
+      "background": "bakery-kitchen",
+      "beats": [
+        {
+          "who": "ines",
+          "expression": "neutral",
+          "say": "When an order times out, fire returns before the slip reaches the book.",
+          "caption": "When an order times out, _fire returns before the slip reaches the book.",
+          "visual": "Timed-out slip → bin."
+        },
+        {
+          "who": "ines",
+          "expression": "concerned",
+          "say": "So errors says zero, the request count shrinks, and the slowest orders, the ones that timed out, leave the tail. The book only remembers the survivors.",
+          "visual": "The report line 'errors: 0'; the tail of the sorted waits loses its tallest bars."
+        },
+        {
+          "who": "ines",
+          "expression": "thinking",
+          "say": "The old four runners got this right: they write the error on the slip and keep it.",
+          "visual": "ClosedLoopRunner's slip with 'error: timeout' going into the book."
+        },
+        {
+          "who": "ines",
+          "expression": "neutral",
+          "say": "In the code: the except branch logs at debug level and returns before records dot append.",
+          "caption": "In the code: the except branch logs at debug level and returns before self.records.append(rec).",
+          "visual": "Code panel openloop.py 106–115 with the except/return lines highlighted."
+        }
+      ],
+      "question": {
+        "id": "w4",
+        "kind": "open",
+        "who": "ines",
+        "prompt": "In the bakery: what should happen to an order that burns or times out?",
+        "branches": [
+          {
+            "id": "w4-retry",
+            "beats": [
+              {
+                "who": "ines",
+                "expression": "thinking",
+                "say": "Let's retry burnt orders until they bake.",
+                "visual": "A burnt order goes back into the oven and comes out fine."
+              },
+              {
+                "who": "ines",
+                "expression": "skeptical",
+                "say": "Now the book says every order worked. But the customer still waited through the first burn, and the slow tail is still missing.",
+                "visual": "The book: all green; the customer's long wait drawn outside the book."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "w5",
+      "issue": "KLN01-5",
+      "title": "The wall clock moves",
+      "function": "cli.py · _run",
+      "code": {
+        "file": "src/kiln_bench/cli.py",
+        "ref": "pr_head",
+        "lines": [
+          90,
+          93
+        ],
+        "highlight": [
+          91,
+          92
+        ],
+        "also": {
+          "file": "src/kiln_bench/timing.py",
+          "note": "RunClock's default is time.perf_counter"
+        }
+      },
+      "background": "back-office",
+      "beats": [
+        {
+          "who": "ines",
+          "expression": "neutral",
+          "say": "The stopwatch is the wall clock. When the computer syncs its time mid-run, a wait can come out negative, or an hour long.",
+          "visual": "The wall clock jumps; a slip shows a negative TTFT."
+        },
+        {
+          "who": "ines",
+          "expression": "thinking",
+          "say": "On Windows before Python three thirteen, the wall clock also only ticks every fifteen point six milliseconds.",
+          "caption": "On Windows before Python 3.13, the wall clock also only ticks every 15.6 ms.",
+          "visual": "A coarse tick ruler: 15.6 ms steps."
+        },
+        {
+          "who": "ines",
+          "expression": "neutral",
+          "say": "kiln-bench already has a better stopwatch: RunClock's default, perf counter, which only moves forward. CONTRIBUTING and decision four say durations never come from time dot time.",
+          "caption": "kiln-bench already has a better stopwatch: RunClock's default, time.perf_counter, which only moves forward. CONTRIBUTING and decision 0004 say durations never come from time.time().",
+          "visual": "timing.py RunClock with default perf_counter; a quote card from decision 0004."
+        },
+        {
+          "who": "ines",
+          "expression": "skeptical",
+          "say": "And the reason in the comment doesn't hold: slips store offsets from the start of the run, so they don't line up with the gateway's logs anyway.",
+          "visual": "A slip's times shown as offsets '2.6 s after start', next to a gateway log line with a full timestamp; they don't match up."
+        },
+        {
+          "who": "ines",
+          "expression": "neutral",
+          "say": "In the code: run creates RunClock with time dot time.",
+          "caption": "In the code: _run creates RunClock(time.time).",
+          "visual": "Code panel cli.py 90–93 with the comment and the RunClock line highlighted."
+        }
+      ],
+      "question": {
+        "id": "w5",
+        "kind": "open",
+        "who": "ines",
+        "prompt": "In the bakery: how would the inspector time waits so a clock change can't break them, and still line up with the gateway's logs if someone needs that?",
+        "branches": [
+          {
+            "id": "w5-sync",
+            "beats": [
+              {
+                "who": "ines",
+                "expression": "thinking",
+                "say": "Let's sync the wall clock every minute, so it's always right.",
+                "visual": "The wall clock gets nudged every minute."
+              },
+              {
+                "who": "ines",
+                "expression": "skeptical",
+                "say": "Each sync can move it in the middle of an order. A wait that crosses a sync is off by however much the clock moved.",
+                "visual": "A slip whose wait spans a nudge: its bracket is stretched by the nudge."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "w6",
+      "issue": "KLN01-6",
+      "title": "The trial only runs on calm days",
+      "function": "tests/test_openloop.py",
+      "code": {
+        "file": "tests/test_openloop.py",
+        "ref": "pr_head",
+        "lines": [
+          11,
+          24
+        ],
+        "highlight": [
+          21,
+          22
+        ]
+      },
+      "background": "test-kitchen",
+      "beats": [
+        {
+          "who": "ines",
+          "expression": "neutral",
+          "say": "The whole point of the PR is to see stalls, and none of its tests has a stall in it.",
+          "visual": "The test kitchen with the stall switch off."
+        },
+        {
+          "who": "ines",
+          "expression": "skeptical",
+          "say": "The schedule test accepts forty to sixty orders for a schedule of fifty, which is wide enough to hide skipped orders.",
+          "visual": "The 40–60 range bar; ten skipped orders would still pass."
+        },
+        {
+          "who": "ines",
+          "expression": "thinking",
+          "say": "And the fake kitchen already has a stall switch: pause every and pause for. Theo added it a week earlier.",
+          "caption": "And the fake kitchen already has a stall switch: pause_every_s and pause_s. Theo added it a week earlier.",
+          "visual": "The stall switch highlighted."
+        },
+        {
+          "who": "ines",
+          "expression": "neutral",
+          "say": "In the code: the open-loop tests run a healthy fake server with a two millisecond prefill.",
+          "visual": "Code panel tests/test_openloop.py 14–26 highlighted."
+        }
+      ],
+      "question": {
+        "id": "w6",
+        "kind": "open",
+        "who": "ines",
+        "prompt": "In the bakery: what trial day would prove the new dispatcher handles a stall?",
+        "branches": [
+          {
+            "id": "w6-longer",
+            "beats": [
+              {
+                "who": "ines",
+                "expression": "thinking",
+                "say": "Let's run the calm trial for a whole hour.",
+                "visual": "The calm test kitchen; the clock spins to one hour."
+              },
+              {
+                "who": "ines",
+                "expression": "skeptical",
+                "say": "Still no stall. It can't tell a dispatcher that stops at the door from one that doesn't.",
+                "visual": "Two dispatchers side by side with identical calm results."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "w7",
+      "ask": "late-sends",
+      "title": "Amara: how many left late?",
+      "function": "Amara's ask: late sends (+ keep p99.9)",
+      "background": "bakery-front",
+      "beats": [
+        {
+          "who": "amara",
+          "expression": "happy",
+          "say": "Hi Luigi! Halyard's contract has p ninety-nine point nine in it, so that stays in the report and the JSON.",
+          "caption": "Hi Luigi! Halyard's contract has p99.9 in it, so that stays in the report and the JSON.",
+          "visual": "Amara's card slides in. A report card with a p99.9 column ticked."
+        },
+        {
+          "who": "amara",
+          "expression": "neutral",
+          "say": "Here's my ask. When the bakery falls behind its own schedule, I want the report to say how many orders went out late.",
+          "visual": "The timeline with due dots and some departures drawn after their due marks."
+        },
+        {
+          "who": "amara",
+          "expression": "thinking",
+          "say": "Late means it left the dispatcher more than ten milliseconds after its due time. Not a slow oven: a late departure.",
+          "visual": "A slip with due 2.000 s, left 2.015 s: '15 ms late → counts'. Another left 2.004: 'on time'."
+        },
+        {
+          "who": "amara",
+          "expression": "neutral",
+          "say": "Kenji wants it as a whole number called late sends in the JSON, and a line starting with late sends, colon, in the text report.",
+          "caption": "Kenji wants it as an integer called late_sends in the JSON, and a line starting with \"late sends:\" in the text report.",
+          "visual": "A JSON snippet with \"late_sends\": 12 and a text line 'late sends: 12'."
+        }
+      ],
+      "question": {
+        "id": "w7",
+        "kind": "open",
+        "who": "amara",
+        "prompt": "In the bakery: how would you count the orders that left late?",
+        "branches": [
+          {
+            "id": "w7-slowbake",
+            "beats": [
+              {
+                "who": "amara",
+                "expression": "thinking",
+                "say": "Let's count the orders that took a long time to bake.",
+                "visual": "Slow bakes highlighted."
+              },
+              {
+                "who": "amara",
+                "expression": "concerned",
+                "say": "On a slow-oven day, everything looks late, even though every order left right on time. And when the door is the hold-up, the late departures hide among normal bakes.",
+                "visual": "Two scenes: slow oven, all left on time but counted; busy door, late departures not counted."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "w8",
+      "ask": "max-in-flight",
+      "title": "Amara: only so many trays",
+      "function": "Amara's ask: --max-in-flight",
+      "background": "bakery-kitchen",
+      "beats": [
+        {
+          "who": "amara",
+          "expression": "neutral",
+          "say": "Right now the tray count borrows dash dash concurrency, which is four. I'd like it to have its own setting, dash dash max in flight, two hundred and fifty-six by default.",
+          "caption": "Right now the tray count borrows --concurrency, which is 4. I'd like it to have its own setting, --max-in-flight, 256 by default.",
+          "visual": "A settings card: '--max-in-flight N (default 256)' next to '--concurrency (closed loop only)'."
+        },
+        {
+          "who": "amara",
+          "expression": "thinking",
+          "say": "When the trays run out, an order waits for one, and its wait still counts from its due time.",
+          "visual": "An order waiting for a tray; its stopwatch already running from the due mark."
+        },
+        {
+          "who": "amara",
+          "expression": "neutral",
+          "say": "And the first time it happens, print one warning, so whoever ran it knows the numbers include time waiting inside kiln-bench. If the trays never run out, no warning.",
+          "visual": "One note pinned on a board the first time the trays run out; no more notes after."
+        },
+        {
+          "who": "amara",
+          "expression": "happy",
+          "say": "And dash dash concurrency keeps meaning four runners for the old closed loop.",
+          "caption": "And --concurrency keeps meaning four runners for the old closed loop.",
+          "visual": "The four closed-loop runners, unchanged."
+        }
+      ],
+      "question": {
+        "id": "w8",
+        "kind": "open",
+        "who": "amara",
+        "prompt": "In the bakery: when every tray is out, what should happen to the next order, and how do you tell whoever ran the day?",
+        "branches": [
+          {
+            "id": "w8-stop",
+            "beats": [
+              {
+                "who": "amara",
+                "expression": "thinking",
+                "say": "Let's stop taking customers until a tray is free.",
+                "visual": "A 'wait' sign at the door."
+              },
+              {
+                "who": "amara",
+                "expression": "concerned",
+                "say": "That's the door problem from earlier. The schedule stops, and the stall disappears from the book.",
+                "visual": "Grey customers queue outside; 'orders sent' stalls."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "w9",
+      "title": "Now say it to a computer",
+      "background": "bakery-front",
+      "beats": [
+        {
+          "who": "ines",
+          "expression": "happy",
+          "say": "That's everything. Your bakery answers are waiting in your plan's real-world move.",
+          "visual": "Answer cards fly into a 'Your plan: real world' card."
+        },
+        {
+          "who": "ines",
+          "expression": "neutral",
+          "say": "Next, say them to a computer: which slip field, which step, which function. The bakery tells you what. The plan tells you where.",
+          "visual": "Bakery card → plan card with steps → code file icons."
+        }
+      ]
+    }
+  ]
+}

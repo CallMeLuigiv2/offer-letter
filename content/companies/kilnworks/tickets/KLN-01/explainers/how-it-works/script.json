@@ -1,0 +1,233 @@
+{
+  "id": "how-it-works",
+  "ticket": "KLN-01",
+  "title": "How Theo's new dispatcher works",
+  "unlock": "review",
+  "mode": "describe",
+  "_mode_note": "Review stage, decision D14 'show, don't say': every behaviour of the PR gets a chapter and is acted out faithfully (bad day included, decoys included), each chapter names the function it depicts, nothing is labelled right or wrong. Narration never uses judgement words (bug, wrong, problem, broken, lost, dropped, unfortunately, should).",
+  "narrator": "theo",
+  "story": "kiln-bench is a bakery's dispatcher: it sends orders (requests) to the kitchen (the inference server) and an inspector's stopwatch times them. The oven sometimes stalls (an engine pause). Trays in the oven are requests in flight. The book is the list of records; the clerk reads percentiles from it.",
+  "chapters": [
+    {
+      "id": "c1",
+      "title": "Two ways to send orders",
+      "function": "loadgen.py · ClosedLoopRunner  →  openloop.py · OpenLoopRunner",
+      "background": "bakery-front",
+      "beats": [
+        {"who": "theo", "expression": "happy", "say": "Hey Luigi, Theo here. Let me show you how my new dispatcher works, using a bakery.",
+         "visual": "Title card 'How Theo's new dispatcher works'. Theo's character card slides in. The bakery storefront background."},
+        {"who": "theo", "expression": "neutral", "say": "kiln-bench is the dispatcher. It sends orders to the kitchen, which is our inference server, and times how long each one takes.",
+         "visual": "A dispatcher desk at the left, the kitchen (an oven) at the right, an arrow of orders between them, a stopwatch icon over the desk. Small labels: 'kiln-bench = dispatcher', 'server = kitchen'."},
+        {"who": "theo", "expression": "thinking", "say": "The old way, the closed loop, has four runners. A runner only takes a new order after its last one comes back.",
+         "visual": "Four runner tokens loop between desk and oven; each waits at the oven, comes back, then takes the next order. Label 'closed loop: 4 runners'."},
+        {"who": "theo", "expression": "happy", "say": "My new way is the open loop. Customers walk in on their own schedule, forty a second, whatever the kitchen is doing.",
+         "visual": "A timeline appears under the scene; customer dots arrive steadily along it, independent of the oven. Label 'open loop: 40 / s'."}
+      ],
+      "question": {"id": "h1", "kind": "predict", "who": "theo",
+        "prompt": "With the old four runners, the oven stalls for one second. How many orders feel that stall?",
+        "options": [
+          {"id": "a", "text": "Only the four already in the oven"},
+          {"id": "b", "text": "Every customer who walked in during the stall"},
+          {"id": "c", "text": "None of them"}
+        ]}
+    },
+    {
+      "id": "c2",
+      "title": "When customers walk in",
+      "function": "openloop.py · PoissonArrivals.next_gap, ConstantArrivals.next_gap",
+      "background": "bakery-front",
+      "beats": [
+        {"who": "theo", "expression": "neutral", "say": "Customers don't arrive like clockwork. With Poisson arrivals, the gap before the next customer is random, but it averages out.",
+         "visual": "Customer dots arrive on the timeline with uneven gaps; a running 'average gap' marker settles."},
+        {"who": "theo", "expression": "thinking", "say": "In code that's random dot expovariate of the rate. Give it forty, and the gaps average one fortieth of a second.",
+         "caption": "In code that's random.expovariate(rate). Give it 40, and the gaps average 1/40 of a second.",
+         "visual": "Code label 'self.rng.expovariate(self.rate)'. A gap ruler shows '≈ 25 ms average'."},
+        {"who": "theo", "expression": "neutral", "say": "With constant arrivals, every gap is exactly one over the rate. That one is easier to test.",
+         "visual": "The dots rearrange into an evenly spaced row. Label 'constant: 1 / rate'."}
+      ],
+      "question": {"id": "h2", "kind": "predict", "who": "theo",
+        "prompt": "Poisson arrivals at forty per second. What's the average gap between customers?",
+        "options": [
+          {"id": "a", "text": "25 milliseconds"},
+          {"id": "b", "text": "40 milliseconds"},
+          {"id": "c", "text": "40 seconds"}
+        ]}
+    },
+    {
+      "id": "c3",
+      "title": "The dispatcher's loop",
+      "function": "openloop.py · OpenLoopRunner.run   (tray count set in cli.py · _run)",
+      "background": "bakery-kitchen",
+      "beats": [
+        {"who": "theo", "expression": "neutral", "say": "Here's the dispatcher's loop. It waits until the next customer is due, then takes the order.",
+         "visual": "A clock hand moves to the next due dot on the timeline; the dispatcher hands an order slip forward."},
+        {"who": "theo", "expression": "neutral", "say": "Every order needs a tray in the oven. There are four trays, because the tray count comes from dash dash concurrency, which is four by default.",
+         "caption": "Every order needs a tray in the oven. There are four trays, because the tray count comes from --concurrency, which is 4 by default.",
+         "visual": "Four tray slots in the oven. Code label 'max_in_flight=args.concurrency' (cli.py)."},
+        {"who": "theo", "expression": "thinking", "say": "Before it takes an order, the dispatcher grabs a free tray. If every tray is out, it waits at the door until one comes back.",
+         "visual": "All four trays fill; the dispatcher stands at the door with a small 'waiting' clock running. Code label 'await self._slots.acquire()'."},
+        {"who": "theo", "expression": "neutral", "say": "When it has a tray, it sends the order, and sets the next due time to now plus the next gap.",
+         "caption": "When it has a tray, it sends the order, and sets the next due time to now plus the next gap: next_at = self.clock() + gap.",
+         "visual": "A tray comes back; the order goes out; a 'next due' marker is placed one gap after the current time."},
+        {"who": "theo", "expression": "happy", "say": "Let's run the stall day: forty customers a second for twenty seconds, and the oven stalls for one second.",
+         "visual": "Timeline 0–20 s. Faint dots: the plan, 40 per second. Solid dots: orders actually sent. A red band 'oven stalls' for 1 s. During the stall the trays fill and the dispatcher waits at the door; no solid dots appear while it waits; when a tray returns the next solid dot is one gap after that moment. A counter 'orders sent' ticks up. No judgement labels."}
+      ],
+      "question": {"id": "h3", "kind": "predict", "who": "theo",
+        "prompt": "Twenty seconds at forty a second, with that stall. How many orders end up in the book?",
+        "options": [
+          {"id": "a", "text": "800"},
+          {"id": "b", "text": "About 670"},
+          {"id": "c", "text": "About 40"}
+        ]}
+    },
+    {
+      "id": "c4",
+      "title": "One order's trip",
+      "function": "openloop.py · OpenLoopRunner._fire   →   records.py · RequestRecord.ttft_s, e2e_s",
+      "background": "bakery-kitchen",
+      "beats": [
+        {"who": "theo", "expression": "neutral", "say": "Every order gets a slip. When the order is created, the slip gets its due time: intended at.",
+         "caption": "Every order gets a slip. When the order is created, the slip gets its due time: intended_at.",
+         "visual": "An order slip card with a field 'due (intended_at): 2.0 s'."},
+        {"who": "theo", "expression": "neutral", "say": "When the dispatcher hands it to the kitchen, the slip gets sent at.",
+         "caption": "When the dispatcher hands it to the kitchen, the slip gets sent_at.",
+         "visual": "The slip gains 'handed over (sent_at): 2.6 s'."},
+        {"who": "theo", "expression": "neutral", "say": "The first loaf out of the oven gives time to first token, T T F T. The last loaf gives end to end.",
+         "caption": "The first loaf out of the oven gives time to first token, TTFT. The last loaf gives end to end, E2E.",
+         "visual": "First loaf at 2.65 s, last loaf at 2.75 s marked on a small timeline under the slip."},
+        {"who": "theo", "expression": "thinking", "say": "Both stopwatches run from sent at: first loaf minus sent at, and last loaf minus sent at.",
+         "caption": "Both stopwatches run from sent_at: ttft = first_token_at − sent_at, e2e = done_at − sent_at.",
+         "visual": "A bracket from 2.6 to 2.65 labelled 'TTFT', and one from 2.6 to 2.75 labelled 'E2E'. The 2.0 due mark stays on the timeline, unlabelled."}
+      ],
+      "question": {"id": "h4", "kind": "predict", "who": "theo",
+        "prompt": "This order was due at 2.0 s, handed over at 2.6 s, and the first loaf came out at 2.65 s. What TTFT goes in the book?",
+        "options": [
+          {"id": "a", "text": "650 ms"},
+          {"id": "b", "text": "50 ms"},
+          {"id": "c", "text": "600 ms"}
+        ]}
+    },
+    {
+      "id": "c5",
+      "title": "When an order fails",
+      "function": "openloop.py · OpenLoopRunner._fire",
+      "background": "bakery-kitchen",
+      "beats": [
+        {"who": "theo", "expression": "neutral", "say": "Sometimes an order times out, or the kitchen sends back an error.",
+         "visual": "An order's timer runs out; a small red X over the tray."},
+        {"who": "theo", "expression": "neutral", "say": "In fire, the dispatcher catches that, writes a line in its debug log, and returns.",
+         "caption": "In _fire, the dispatcher catches that, writes a line in its debug log, and returns.",
+         "visual": "The note goes onto a small 'debug log' pad. Code label 'log.debug(...); return'."},
+        {"who": "theo", "expression": "neutral", "say": "The slip goes into the book on the line after that, so a failed order's slip goes in the bin instead.",
+         "visual": "The failed slip drops into a bin; the book stays closed. Code label 'self.records.append(rec)' below the return."},
+        {"who": "theo", "expression": "neutral", "say": "The report counts errors from the slips in the book.",
+         "visual": "The book feeds a report line 'N requests …, errors: …'."}
+      ],
+      "question": {"id": "h5", "kind": "predict", "who": "theo",
+        "prompt": "On a run where three orders time out, what does the report's errors line say?",
+        "options": [
+          {"id": "a", "text": "3 errors"},
+          {"id": "b", "text": "0 errors"},
+          {"id": "c", "text": "The run stops with an error"}
+        ]}
+    },
+    {
+      "id": "c6",
+      "title": "Closing time",
+      "function": "openloop.py · OpenLoopRunner.run (the end of the loop)",
+      "background": "bakery-front",
+      "beats": [
+        {"who": "theo", "expression": "neutral", "say": "At twenty seconds the dispatcher stops taking orders.",
+         "visual": "A 'closed' sign flips at t = 20 s on the timeline."},
+        {"who": "theo", "expression": "neutral", "say": "Some orders are still in the oven. The loop waits for all of them with gather before it closes the book.",
+         "caption": "Some orders are still in the oven. The loop waits for all of them with asyncio.gather before it closes the book.",
+         "visual": "Three trays still baking after closing; the dispatcher waits; their slips then go into the book. Code label 'await asyncio.gather(*self._inflight)'."},
+        {"who": "theo", "expression": "happy", "say": "Then it sorts the slips by order number and hands the book to the report.",
+         "visual": "The book's slips sort by id; the book slides toward a 'report' card."}
+      ],
+      "question": {"id": "h6", "kind": "predict", "who": "theo",
+        "prompt": "Closing time, and three orders are still in the oven. What happens to them?",
+        "options": [
+          {"id": "a", "text": "The dispatcher waits, and they go in the book"},
+          {"id": "b", "text": "They're cancelled at closing"},
+          {"id": "c", "text": "They go in the book with no times"}
+        ]}
+    },
+    {
+      "id": "c7",
+      "title": "Reading the book: percentiles",
+      "function": "metrics.py · percentile",
+      "background": "back-office",
+      "beats": [
+        {"who": "theo", "expression": "neutral", "say": "Now the clerk reads the book. To find a percentile, the slips are sorted from fastest to slowest.",
+         "visual": "Ten slips in a row, sorted ascending; nine short bars around 15 ms and one tall bar of 2 s at the end."},
+        {"who": "theo", "expression": "thinking", "say": "For the ninety-ninth percentile, the clerk works out a position: point nine nine times the number of slips.",
+         "caption": "For the 99th percentile, the clerk works out a position: 0.99 × the number of slips.",
+         "visual": "'0.99 × 10 = 9.9' written above the row."},
+        {"who": "theo", "expression": "neutral", "say": "Then int turns that into a whole number, and the clerk takes the slip at that position.",
+         "caption": "Then int() turns that into a whole number, and the clerk takes the slip at that position: rank = int(q / 100 * n).",
+         "visual": "9.9 becomes 9 under 'int'; a finger points at slip number 9."},
+        {"who": "theo", "expression": "happy", "say": "Every number in the report is a wait that really happened. That's nearest rank, like HdrHistogram.",
+         "visual": "A small badge 'nearest rank: always a real wait'."}
+      ],
+      "question": {"id": "h7", "kind": "predict", "who": "theo",
+        "prompt": "Ten slips: nine took about 15 ms, one took 2 seconds. What does p99 show?",
+        "options": [
+          {"id": "a", "text": "2 seconds"},
+          {"id": "b", "text": "About 15 ms"},
+          {"id": "c", "text": "About 200 ms, the average"}
+        ]}
+    },
+    {
+      "id": "c8",
+      "title": "The stopwatch itself",
+      "function": "cli.py · _run",
+      "background": "back-office",
+      "beats": [
+        {"who": "theo", "expression": "neutral", "say": "All these times come from one clock. In run, I set it to the wall clock, time dot time.",
+         "caption": "All these times come from one clock. In _run, I set it to the wall clock: RunClock(time.time).",
+         "visual": "A wall clock on the office wall. Code label 'clock = RunClock(time.time)'."},
+        {"who": "theo", "expression": "happy", "say": "The comment says why: so every timestamp lines up with the gateway's access logs.",
+         "visual": "The comment line shown: '# Wall clock, so per-request timestamps line up with gateway access logs.'"},
+        {"who": "theo", "expression": "neutral", "say": "Each wait is one reading of that clock minus another.",
+         "visual": "Two clock readings with a minus sign between them."},
+        {"who": "theo", "expression": "thinking", "say": "Wall clocks can be adjusted while the bakery is open, for example when the computer syncs its time.",
+         "visual": "Mid-run, a hand sets the wall clock back by one hour."}
+      ],
+      "question": {"id": "h8", "kind": "predict", "who": "theo",
+        "prompt": "An order is handed over, and before its first loaf comes out the wall clock is set back one hour. What TTFT goes in the book?",
+        "options": [
+          {"id": "a", "text": "About minus one hour"},
+          {"id": "b", "text": "The real wait, about 50 ms"},
+          {"id": "c", "text": "Exactly one hour"}
+        ]}
+    },
+    {
+      "id": "c9",
+      "title": "How it was tested",
+      "function": "tests/test_openloop.py",
+      "background": "test-kitchen",
+      "beats": [
+        {"who": "theo", "expression": "neutral", "say": "Last, the tests. They run the open loop against the fake kitchen.",
+         "visual": "A small test kitchen, calm."},
+        {"who": "theo", "expression": "neutral", "say": "The fake kitchen in these tests is healthy: two milliseconds to the first loaf, every time.",
+         "visual": "The oven gauge reads 'prefill 2 ms', steady."},
+        {"who": "theo", "expression": "neutral", "say": "The schedule test asks for fifty orders and passes with anything from forty to sixty.",
+         "caption": "The schedule test asks for fifty orders and passes with anything from 40 to 60: assert 40 <= len(records) <= 60.",
+         "visual": "A range bar from 40 to 60 with 50 marked in the middle."},
+        {"who": "theo", "expression": "neutral", "say": "The fake kitchen can stall on purpose, with pause every and pause for. These tests leave that switch off.",
+         "caption": "The fake kitchen can stall on purpose, with pause_every_s and pause_s. These tests leave that switch off.",
+         "visual": "A 'stall' switch on the oven, in the off position."},
+        {"who": "theo", "expression": "happy", "say": "That's my dispatcher. It's your review now, so don't go easy on it.",
+         "visual": "Theo's card centred, end card 'Your turn: the diff'."}
+      ],
+      "question": {"id": "h9", "kind": "predict", "who": "theo",
+        "prompt": "Which kind of day do these open-loop tests run?",
+        "options": [
+          {"id": "a", "text": "Only calm days, no stall"},
+          {"id": "b", "text": "A day with a stall"},
+          {"id": "c", "text": "Both"}
+        ]}
+    }
+  ]
+}
