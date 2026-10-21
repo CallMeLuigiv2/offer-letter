@@ -24,3 +24,6 @@ test-results/
 *.ckpt
 tools/comfy/out/
 .env
+
+# Spike renders
+docs/spikes/*/media/
