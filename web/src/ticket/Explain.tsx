@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api';
 import type { ExplainFinish, ExplainTurn } from '../api';
 import { teammatesAvailable } from '../lib/governor';
-import { stageRoute } from '../lib/stages';
+import { nextStage, stageRoute } from '../lib/stages';
 import { findPersona, personaRef, sleep } from '../lib/util';
 import { useStore } from '../store';
 import { errText, useAsync, useReducedMotion } from '../ui/hooks';
@@ -169,7 +169,11 @@ function ExplainInner() {
               </ul>
               <Markdown>{finish.debrief_md}</Markdown>
               {finish.passed ? (
-                <Link className="btn primary" to={stageRoute(detail.id, 'change')}>Go to the change request</Link>
+                nextStage(detail, 'explain') === 'plan' ? (
+                  <Link className="btn primary" to={stageRoute(detail.id, 'plan')}>Plan the change</Link>
+                ) : (
+                  <Link className="btn primary" to={stageRoute(detail.id, 'change')}>Go to the change request</Link>
+                )
               ) : (
                 <button className="btn" onClick={() => setFinish(null)}>Keep explaining</button>
               )}

@@ -67,7 +67,7 @@ test('KLN-01 against the real server', async ({ page, request }) => {
   // ---- ticket
   await page.locator('.side-link', { hasText: 'Tickets' }).click();
   await page.getByTestId('card-KLN-01').click();
-  await expect(page.locator('.step[data-state="locked"]')).toHaveCount(5);
+  await expect(page.locator('.step[data-state="locked"]')).toHaveCount(6);
   await shot(page, '08-ticket');
   await page.getByRole('button', { name: 'Start ticket' }).click();
 
@@ -130,7 +130,61 @@ test('KLN-01 against the real server', async ({ page, request }) => {
   await expect(page.getByTestId('rubric')).toBeVisible({ timeout: 90_000 });
   await shot(page, '14-explain-rubric');
   await expect(page.getByTestId('rubric')).toContainText('You covered the points that matter');
-  await page.getByRole('link', { name: 'Go to the change request' }).click();
+  await page.getByRole('link', { name: 'Plan the change' }).click();
+
+  // ---- plan (lite): real outline, real example runs against the PR head + the kit's fake server, demo review
+  await expect(page.getByTestId('plan')).toBeVisible();
+  await expect(page.locator('.step[data-stage="change"]')).toHaveAttribute('data-state', 'locked');
+  await page.getByRole('radiogroup', { name: 'How much plan' }).getByRole('radio', { name: 'Lite' }).click();
+  await page.locator('.rail-btn', { hasText: 'Say it back' }).click();
+  await page.getByLabel('Given', { exact: true }).fill('a --rate run of kiln-bench against a server that can stall');
+  await page.getByLabel('Produce', { exact: true }).fill('a report and JSON with p99.9 and a count of late sends');
+  await page.getByLabel('Done when', { exact: true }).fill('a run through a pause says how many sends were late');
+  await page.locator('.rail-btn', { hasText: 'Examples' }).click();
+  await page.getByRole('button', { name: '+ happy' }).click();
+  await page.getByRole('radiogroup', { name: 'Form of example 1' }).getByRole('radio', { name: 'command' }).click();
+  await page.getByLabel('Command for example 1').fill('run --rate 10 --duration 2 --arrival constant --format json');
+  await page.getByLabel('Fixture for example 1').selectOption('fake_server');
+  await page.getByRole('button', { name: '+ add a check on the output' }).click();
+  await page.getByLabel('Check 1 of example 1', { exact: true }).selectOption('json_has');
+  await page.getByLabel('JSON key for check 1 of example 1').fill('late_sends');
+  await page.getByRole('button', { name: '+ error' }).click();
+  await page.getByLabel('Function for example 2').fill('kiln_bench.metrics.percentiles');
+  await page.getByLabel('Arguments for example 2').fill('[]');
+  await page.getByRole('radiogroup', { name: 'Compare' }).getByRole('radio', { name: 'raises' }).click();
+  await page.getByLabel('Exception for example 2').fill('ValueError');
+  await page.getByRole('radiogroup', { name: 'On the current code, example 1 will' }).getByRole('radio', { name: 'fail' }).click();
+  await page.getByRole('radiogroup', { name: 'On the current code, example 2 will' }).getByRole('radio', { name: 'fail' }).click();
+  await page.getByRole('button', { name: /^Run 2 examples/ }).click();
+  await expect(page.locator('.run-out')).toHaveCount(2, { timeout: 180_000 });
+  await shot(page, '15a-plan-examples-run');
+  await page.locator('.rail-btn', { hasText: 'Contracts' }).click();
+  await page.getByRole('button', { name: '+ new step' }).click();
+  await page.getByLabel('Label of step 1').fill('count the late sends');
+  await page.getByRole('button', { name: 'Add something step 1 takes' }).click();
+  await page.getByLabel('Step 1 takes, row 1').selectOption('__new__');
+  await page.getByLabel('New value for Step 1 takes, row 1').fill('records');
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  const noSource = page.getByTestId('checks').locator('[data-check="flow.no_source"]');
+  await noSource.getByRole('button', { name: 'Keep my design because…' }).click();
+  await page.getByLabel(/Why keep it:/).fill('the records come from the runner, outside this plan');
+  await page.getByRole('button', { name: 'Keep it' }).click();
+  await page.locator('.rail-btn', { hasText: 'Decide' }).click();
+  for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'One block more' }).click();
+  await page.getByLabel('First slice').selectOption({ index: 1 });
+  await page.locator('.rail-btn', { hasText: 'Review' }).click();
+  await page.getByRole('button', { name: 'Ask Kenji to review the plan' }).click();
+  await expect(page.locator('.intent')).toContainText('I read your plan as', { timeout: 60_000 });
+  await page.getByRole('button', { name: 'Yes', exact: true }).click();
+  await page.locator('.intent').getByRole('button', { name: 'Send' }).click();
+  const q1 = page.locator('.pq').first();
+  await q1.getByRole('button', { name: "I'll change it" }).click();
+  await expect(q1).toContainText('answered', { timeout: 60_000 });
+  await page.getByRole('button', { name: 'Submit the plan' }).click();
+  await expect(page.getByTestId('plan-submitted')).toContainText('Plan submitted.', { timeout: 30_000 });
+  await shot(page, '15b-plan-submitted');
+  await page.getByRole('link', { name: 'Go to Change' }).click();
+  await expect(page.getByTestId('your-plan')).toContainText('count the late sends');
 
   // ---- change: apply the kit's reference fix in his clone, push, check
   const change = json('change.json') as { branch_hint: string };
@@ -151,6 +205,7 @@ test('KLN-01 against the real server', async ({ page, request }) => {
   await shot(page, '16-change-result');
   await expect(page.getByTestId('change-result')).toContainText('All tests pass');
   await page.getByRole('link', { name: 'Go to Own' }).click();
+  await expect(page.getByTestId('drift')).toContainText('How the plan held up', { timeout: 120_000 });
 
   // ---- own: open the dialog and cancel. Pushing creates a real GitHub repo, so this run never confirms.
   await page.getByRole('button', { name: 'Push to my GitHub' }).click();
