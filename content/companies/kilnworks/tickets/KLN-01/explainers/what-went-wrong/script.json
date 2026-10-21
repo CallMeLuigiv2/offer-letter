@@ -512,7 +512,7 @@
           "who": "ines",
           "expression": "neutral",
           "say": "In the code: the open-loop tests run a healthy fake server with a two millisecond prefill.",
-          "visual": "Code panel tests/test_openloop.py 14–26 highlighted."
+          "visual": "Code panel tests/test_openloop.py 11–24, lines 21–22 highlighted."
         }
       ],
       "question": {

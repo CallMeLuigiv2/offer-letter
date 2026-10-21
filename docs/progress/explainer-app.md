@@ -50,8 +50,10 @@ PR-changed function has a chapter. Media/manifest presence is a **warning** (new
   predict + flag shown on the Review page; open answer → branch → teammate → continue + show-me; bridge hand-off;
   my-plan render → confirm).
 - `pnpm e2e:real` against `offerletter serve --fake-teammates` (port 8799, temp home): 1 passed (1.7 min). Then an API
-  smoke on that server: real KLN-01 list/manifests (all 19 chapter clips rendered), a 206 on `c1.mp4`, my-plan render
-  failing cleanly with the renderer's error (no `explainer.plan_video` yet).
+  smoke on that server: real KLN-01 list/manifests (all 19 chapter clips rendered), a 206 on `c1.mp4`.
+- Real plan video, after explainer-render landed `explainer.plan_video`: a 3-step KLN-01 plan through the server with
+  the default command (real content, demo teammates, temp home) → `rendering` → `ready` in 33 s; manifest chapter
+  `my-plan.mp4` (28.5 s), a 206 on the clip, the VTT served, confirm stored, summary `questions_done: 1`.
 - `uv run --project server python tools/verify_kit.py kilnworks --only KLN-01 --quick`: all explainer checks pass except
   the function-coverage one (content gap, below). The PR head's own tests also failed there (2 timing tests:
   `test_cli.py::test_open_loop_run` "assert 12 >= 30", `test_openloop.py::test_constant_arrivals_follow_the_schedule`)
@@ -101,7 +103,6 @@ PR-changed function has a chapter. Media/manifest presence is a **warning** (new
   test files `tests/test_cli.py`, `test_loadgen.py`, `test_metrics.py`, `test_records.py`, `test_report.py`. Rule used: an
   exact name, the function's class, a member of its class (covers the class body) or a file-only mention covers it;
   test files count per file. Sent to explainer-render.
-- `explainer.plan_video` doesn't exist yet, so "Play my plan" ends in a clear "failed" with the renderer's error.
 - The real Haiku grader and teammate lines were not run live (FakeRunner and the demo runner only, no plan usage).
   The persona prompt sees the must ideas so it can point; the leak guard catches verbatim runs, not paraphrase.
 - Web: no focus trap in the theater; a flag switches the diff file but doesn't jump to a line; Contracts/Run component

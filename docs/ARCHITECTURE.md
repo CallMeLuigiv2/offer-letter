@@ -430,14 +430,15 @@ function gets a chapter.
 
 ### 9.2 Renderer (`tools/explainer/`, its own uv project; never run by the server except for the plan video)
 
-- `uv run --project tools/explainer python -m explainer.render <company> <ticket> [--video V] [--only CLIP]
+- From `tools/explainer/` (the project has `package = false`, so `-m explainer.…` needs that working directory):
+  `uv run python -m explainer.render <company> <ticket> [--video V] [--only CLIP]
   [--preview]` → media + manifest. Voices: the persona's primary candidate in
   `content/companies/<co>/voices/casting.json` (re-render after his blind test, D5). Kokoro model from
   grokbot's folder (as fundamentals-studio). Backgrounds: `tools/explainer/assets/backgrounds/*.png`, generated
   locally with ComfyUI + Animagine XL 4.0 by `tools/explainer/gen_backgrounds.py`, in the portraits' style,
   shown darkened/blurred behind diagrams. Portraits: `content/companies/<co>/portraits/<slug>/<expr>[_talk].webp`
   as a framed card with a name plate; lip-flap from the clip's loudness.
-- `uv run --project tools/explainer python -m explainer.plan_video --plan P.json --context C.json --out DIR` →
+- `uv run python -m explainer.plan_video --plan P.json --context C.json --out DIR` →
   `my-plan.mp4`, `my-plan.vtt`, `manifest.json` (one chapter + a confirm question). Deterministic template from
   his PlanDoc (steps as stations, data as moving items, his desk-check walk values as labels); 720p30; must
   finish in under 3 minutes for a 6-step plan.
