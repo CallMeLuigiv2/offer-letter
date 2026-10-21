@@ -258,6 +258,14 @@ PlanDoc = {
   watched: string[],                              // worked-plan ids he has replayed
   read: { seam: SymbolRef[], callers: SymbolRef[], note: string },
   restate: { given: string, produce: string, done_when: string },
+  bridge: {                                         // the real-world version of the problem, then "say it to a computer"
+    source: string | null,                          // "explainer:<id>" when it came from an explainer video answer, else null
+    story_md: string,                               // the real-life situation (from the video, a teammate, or his own)
+    solution_md: string,                            // HIS words: how it would be solved in the real world
+    mapping: [{ id, real: string, kind: "thing" | "action" | "rule" | "limit",
+                to: Ref | null,                     // the data/step card (or example) it became
+                breaks?: string }],                 // where the analogy stops being true
+  },
   marks: [{ id, text, kind: "rule" | "question", sent_message_id?: string }],   // phrases tapped in the request
   examples: Example[],
   data: DataCard[], steps: StepCard[],
@@ -269,7 +277,11 @@ PlanDoc = {
   kept: { [checkKey: string]: string },            // flags he keeps, with his reason
   derived: { checks: Check[], moves: { [m in MoveId]?: boolean }, computed_at }  // written by the engine on every save
 }
-MoveId = "watch" | "read" | "restate" | "examples" | "pieces" | "contracts" | "run" | "decide" | "review"
+MoveId = "watch" | "read" | "restate" | "bridge" | "examples" | "pieces" | "contracts" | "run" | "decide" | "review"
+// bridge (added 2026-10-21 from Luigi): "In real life, how would you solve this?" → his answer in his words →
+// a mapping table (real-world thing → data card, action → step card, rule/limit → check or example), with
+// "+ make this a card" on every row so pieces/contracts start from his own solution, and one "where it
+// breaks" line. Research: bridging analogies / structure mapping (research/07 §4–§5, research/09 when it lands).
 SymbolRef = { path: string, symbol: string }       // symbol = qualname, e.g. "ClosedLoopRunner._one"
 Ref = { type: "example"|"data"|"step"|"decision"|"premortem"|"mark", id: string }
 Reason = { chip?: string, text?: string }
@@ -311,7 +323,8 @@ The server never re-implements these: it reads `derived` for the gate and for th
 
 Moves required per weight (`moves.ts`): lite = restate, examples (≥2 incl. one boundary or error),
 contracts-lite (every step has a label and takes or gives), decide-scope (appetite + first slice).
-standard = read (change tickets), restate, examples (≥3, ≥1 boundary, ≥1 error), pieces (every card has a
+standard = read (change tickets), restate, bridge (story + his solution + ≥3 mapping rows, each mapped
+to a card or example, and one "breaks" line), examples (≥3, ≥1 boundary, ≥1 error), pieces (every card has a
 kind), contracts, run (one example walked to the end), decide (≥1 decision with because + instead_of,
 3 pre-mortem lines, appetite, ≥1 no-go, first slice). full = standard + every external step has a failure
 line + ≥1 decision with `would_change_if`. `watch` is required only until he has watched 2 worked plans.
