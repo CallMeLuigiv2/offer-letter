@@ -128,8 +128,11 @@ def _example_line(ex: dict[str, Any]) -> str:
     elif ex.get("form") == "cli":
         c = ex.get("cli") or {}
         checks = ", ".join(f"{k.get('kind')} {k.get('path') or ''} {k.get('value') or ''}".strip() for k in c.get("checks") or [])
-        what = f"runs `{_clip(c.get('args'), 100)}`" + (f" against {c['fixture']}" if c.get("fixture") else "") \
-            + (f", checks: {checks}" if checks else "")
+        fixture = ""
+        if c.get("fixture"):
+            fixture = f" against {c['fixture']}" + (f" started with `{_clip(c.get('fixture_args'), 80)}`"
+                                                     if str(c.get("fixture_args") or "").strip() else "")
+        what = f"runs `{_clip(c.get('args'), 100)}`{fixture}" + (f", checks: {checks}" if checks else "")
     else:
         t = ex.get("text") or {}
         what = f"given {_clip(t.get('given'), 100)}, expects {_clip(t.get('expect'), 100)}"
@@ -316,6 +319,9 @@ def reply_prompt(persona: Persona, player: str, question: dict[str, Any], choice
             + f"Now they say ({choice}): \"{_clip(body, 600)}\"\n\n")
     common = ("Answer as yourself, in chat style, one to four short sentences, plain text. Point at the work, never the "
               "person. Never write code, pseudo-code, signatures or imports, and never use a code block.\n")
+    if choice != "show_fix":
+        common += ("Respond only to what he said. Don't add design advice of your own (where to compute something, "
+                   "which data to keep, how to structure it): the plan is his.\n")
     if choice == "lost":
         task = RUNG_TEXT[rung] + "\n"
     elif choice == "show_fix":
