@@ -27,6 +27,12 @@ class Settings:
     # scales teammate typing delays; 0 in tests
     delay_scale: float = 1.0
     command_timeout_s: float = 180.0
+    # renders "your plan, played out" (ARCHITECTURE 9.2); the server appends --plan/--context/--out
+    plan_video_cmd: list[str] = field(default_factory=lambda: [
+        "uv", "run", "--project", str(REPO_ROOT / "tools" / "explainer"), "python", "-m", "explainer.plan_video"])
+    plan_video_timeout_s: float = 360.0
+    # tools/explainer isn't an installed package (uv `package = false`), so `-m explainer...` runs from its folder
+    plan_video_cwd: Path = REPO_ROOT / "tools" / "explainer"
 
     @property
     def data_dir(self) -> Path:

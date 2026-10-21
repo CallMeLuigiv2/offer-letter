@@ -16,7 +16,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from . import git_service, kits, plan_code, plan_examples, stages
+from . import explainers, git_service, kits, plan_code, plan_examples, stages
 from .db import Row, dumps, new_id, now
 from .errors import ApiError
 from .plan_schema import REQUIRED_MOVES, WEIGHTS
@@ -179,6 +179,8 @@ def build_context(svc: Services, ticket: Row, kit: kits.TicketKit) -> dict[str, 
         # The real-world move's starting story (later: from the "what went wrong" explainer video).
         "story": ({"source": kit.plan.get("story_source"), "story_md": str(kit.plan["story_md"])}
                   if kit.plan.get("story_md") else None),
+        # His accepted real-world answers from the "what went wrong" video, in his own words (ARCHITECTURE 9.5).
+        "bridge_seed": explainers.bridge_seed(svc.settings, svc.db, ticket),
     }
 
 
@@ -533,6 +535,10 @@ def submit_debrief(svc: Services, ticket: Row, kit: kits.TicketKit, doc: dict[st
                     lines.append(f"  - {reviewer.first_name}: {_one_line(rep['persona_md'])}")
         if not review["questions"]:
             lines.append("No questions this time.")
+    seen = explainers.seen_not_solved(svc.settings, svc.db, ticket)
+    if seen:
+        lines += ["", "## Seen, not solved", "In the explainer video you asked to be shown these instead of working them "
+                  "out. They're worth another go in your own words before you code: " + "; ".join(seen) + "."]
     if weight == "lite":
         done = (doc.get("derived") or {}).get("moves") or {}
         skipped = [MOVE_SENTENCES[m].split(":")[0].rstrip(".") for m in SKIPPED_FOR_LITE if not done.get(m)]

@@ -1,0 +1,35 @@
+{
+  "id": "how-it-works",
+  "ticket": "T-01",
+  "title": "How Sam's summary works",
+  "unlock": "review",
+  "mode": "describe",
+  "narrator": "peer",
+  "story": "The app is a race timing desk: runners finish, a clerk keeps their slips, and the summary card reads the middle time from them.",
+  "chapters": [
+    {
+      "id": "c1",
+      "title": "Picking the middle slip",
+      "function": "stats.py · percentile",
+      "background": "desk",
+      "beats": [
+        {"who": "peer", "expression": "happy", "say": "The clerk keeps the slips in the order the runners finish."},
+        {"who": "peer", "expression": "neutral", "say": "For the middle time, the clerk counts to the middle of the pile."}
+      ],
+      "question": {
+        "id": "h1", "kind": "predict", "who": "peer",
+        "prompt": "Slips arrive as 5, 1, 9, 3 and 7 seconds. Which one does the clerk read as the middle?",
+        "options": [{"id": "a", "text": "9 seconds"}, {"id": "b", "text": "5 seconds"}, {"id": "c", "text": "1 second"}]
+      }
+    },
+    {
+      "id": "c2",
+      "title": "The summary card",
+      "function": "report.py · summarize",
+      "background": "desk",
+      "beats": [
+        {"who": "peer", "expression": "neutral", "say": "The card shows the average and the middle time for the day."}
+      ]
+    }
+  ]
+}

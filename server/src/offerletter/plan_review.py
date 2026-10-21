@@ -154,8 +154,9 @@ def _step_line(step: dict[str, Any]) -> str:
             f"{'; awaits' if step.get('awaits') else ''}{'; risky' if step.get('risky') else ''}{_reason(step)}")
 
 
-def digest(doc: dict[str, Any]) -> str:
-    """The plan as plain text for a prompt: every part he wrote, with his reasons, nothing the engine inferred."""
+def digest(doc: dict[str, Any], video_notes: list[str] | None = None) -> str:
+    """The plan as plain text for a prompt: every part he wrote, with his reasons, nothing the engine inferred.
+    `video_notes`: what he said after watching his plan played back (the my-plan explainer's confirm replies)."""
     out: list[str] = []
     read = doc.get("read") or {}
     if read.get("seam") or read.get("callers") or read.get("note"):
@@ -195,6 +196,8 @@ def digest(doc: dict[str, Any]) -> str:
         out.append("RECENT EDITS (oldest first; flip-flops are worth a question):\n" + "\n".join(
             f"- {h.get('move')}: {h.get('action')}" + (f" {h['ref'].get('type')} {h['ref'].get('id')}" if isinstance(h.get("ref"), dict) else "")
             for h in history))
+    if video_notes:
+        out.append("HIS PLAN AS A VIDEO:\n" + "\n".join(f"- {_clip(n, 400)}" for n in video_notes))
     return "\n".join(out)
 
 
@@ -219,7 +222,7 @@ def _checks_text(doc: dict[str, Any], server_checks: list[dict[str, Any]]) -> st
 
 def review_prompt(persona: Persona, player: str, ticket: dict[str, Any], request_md: str, doc: dict[str, Any],
                   server_checks: list[dict[str, Any]], mode: str, round_no: int, earlier: list[dict[str, Any]],
-                  reminder: str = "") -> str:
+                  reminder: str = "", video_notes: list[str] | None = None) -> str:
     prior = ""
     if earlier:
         prior = "\nYOU REVIEWED AN EARLIER VERSION. Your questions then were:\n" + "\n".join(
@@ -245,7 +248,7 @@ def review_prompt(persona: Persona, player: str, ticket: dict[str, Any], request
         "5. Do not ask what the checks already said is fine. Do not repeat a question you asked before.\n"
         f"{thrifty}{prior}\n"
         f"THE REQUEST THE PLAN IS ABOUT:\n{_clip(request_md, 1800)}\n\n"
-        f"HIS PLAN ({doc.get('weight', 'standard')} weight):\n{digest(doc)}\n\n"
+        f"HIS PLAN ({doc.get('weight', 'standard')} weight):\n{digest(doc, video_notes)}\n\n"
         f"AUTOMATIC CHECKS STILL OPEN:\n{_checks_text(doc, server_checks)}\n"
     )
     return prompt + (f"\nREMINDER: {reminder}\n" if reminder else "")

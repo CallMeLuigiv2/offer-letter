@@ -187,7 +187,13 @@ def stage_kit(source: Path, kits_dir: Path, company: str) -> Path:
     dest = kits_dir / company / source.name
     if dest.exists():
         shutil.rmtree(dest)
-    shutil.copytree(source, dest, ignore=lambda _d, names: [n for n in names if n in SERVER_ONLY])
+
+    def skip(folder: str, names: list[str]) -> list[str]:
+        # Rendered explainer media is big and is served from the content pack, so it isn't staged.
+        rendered = ["media"] if Path(folder).parent.name == "explainers" else []
+        return [n for n in names if n in SERVER_ONLY or n in rendered]
+
+    shutil.copytree(source, dest, ignore=skip)
     return dest
 
 

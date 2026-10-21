@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from . import catalog, change, explain, git_service, kits, onboarding, quiz, review, stages
 from .db import Row, decode, dumps, new_id, now
 from .errors import ApiError
+from .explainer_routes import build_explainer_router
 from .plan_routes import build_plan_router
 from .services import Services
 from .teammates.personas import Persona, persona_from_row
@@ -407,4 +408,5 @@ def build_router(svc: Services) -> APIRouter:
         return {"repo_url": url}
 
     r.include_router(build_plan_router(svc))
+    r.include_router(build_explainer_router(svc))
     return r

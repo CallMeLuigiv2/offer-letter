@@ -1,0 +1,39 @@
+{
+  "id": "what-went-wrong",
+  "ticket": "T-01",
+  "title": "What goes wrong at the timing desk",
+  "unlock": "after_review",
+  "mode": "explain",
+  "narrator": "lead",
+  "chapters": [
+    {
+      "id": "w0",
+      "title": "How this works",
+      "background": "desk",
+      "beats": [{"who": "lead", "expression": "neutral", "say": "Each chapter shows one thing that goes wrong at the desk."}]
+    },
+    {
+      "id": "w1",
+      "title": "The clerk reads an unsorted pile",
+      "issue": "I1",
+      "function": "stats.py · percentile",
+      "code": {"file": "stats.py", "ref": "head", "lines": [5, 8], "highlight": [6]},
+      "background": "desk",
+      "beats": [{"who": "lead", "expression": "concerned", "say": "The pile is in finishing order, so the middle of the pile is not the middle time."}],
+      "question": {
+        "id": "w1", "kind": "open", "who": "lead",
+        "prompt": "At the desk: how should the clerk pick the middle slip?",
+        "branches": [{"id": "w1-first", "beats": [{"who": "peer", "expression": "surprised", "say": "The clerk grabs the first slip off the pile, and the card shows the winner's time."}]}]
+      }
+    },
+    {
+      "id": "w2",
+      "title": "A day with no runners",
+      "issue": "I2",
+      "function": "report.py · summarize",
+      "background": "desk",
+      "beats": [{"who": "lead", "expression": "thinking", "say": "On a rainy day nobody runs, and the clerk tries to share zero slips between zero runners."}],
+      "question": {"id": "w2", "kind": "open", "who": "lead", "prompt": "At the desk: what should the card say on a day with no runners?"}
+    }
+  ]
+}

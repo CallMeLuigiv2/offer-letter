@@ -9,7 +9,7 @@ from typing import Any, Literal
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from . import plan, plan_review, stages
+from . import explainers, plan, plan_review, stages
 from .db import Row, dumps, new_id, now
 from .errors import ApiError
 from .services import Services
@@ -114,10 +114,11 @@ def build_plan_router(svc: Services) -> APIRouter:
         round_no = len(earlier) + 1
         request_md = plan.request_of(svc, ticket, kit)
         player = plan.player_name(svc)
+        video_notes = explainers.confirm_notes(db, ticket_id)
 
         def make(reminder: str) -> str:
             return plan_review.review_prompt(persona, player, ticket, request_md, doc, checks, mode, round_no,
-                                             earlier, reminder)
+                                             earlier, reminder, video_notes)
 
         model = "haiku" if mode == "thrifty" else "sonnet"  # Sonnet reads plans; the governor says when to save
         typing(persona, ticket_id, True)

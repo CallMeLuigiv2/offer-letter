@@ -23,6 +23,11 @@ CANNED: dict[str, list[str]] = {
     "leo": ["oh, thanks! I'll try that.", "sorry, quick question, is this the right branch?", "got it, thank you!"],
 }
 GENERIC = ["Sounds good.", "Got it, thanks.", "Makes sense. Anything else?"]
+# The teammate's line at an explainer pause, by rung (0 after a branch scene, 1 pointed question, 2 observation, 3 vague)
+EXPLAINER_LINES = ["So what went wrong there, and how would you fix it?",
+                   "Picture the next customer walking in. What happens to them with your idea?",
+                   "Think about the busiest minute of the day with your idea in place. Who waits, and for how long?",
+                   "Say a bit more: what exactly would you do, step by step?"]
 EXPRESSIONS = ("neutral", "thinking", "happy", "skeptical", "surprised", "concerned", "laughing")
 STOP = {"which", "about", "their", "there", "where", "while", "should", "would", "could", "other", "these"}
 
@@ -50,9 +55,17 @@ class DemoRunner:
         if "persona_md" in props:  # reply to a plan-review answer
             data = {"persona_md": "ok. that answers it for now.", "conceded": True}
             return TeammateReply(json.dumps(data), data, "demo-session", None, 0.0)
+        if "matched_wrong_idea" in props:  # an open answer at an explainer pause
+            data = self._grade_answer(prompt)
+            return TeammateReply(json.dumps(data), data, "demo-session", None, 0.0)
         if json_schema is not None:
             data = self._grade(prompt)
             return TeammateReply(json.dumps(data), data, "demo-session", None, 0.0)
+        if "in an explainer video for ticket" in prompt:  # the teammate's line after an answer
+            text = EXPLAINER_LINES[3 if "say a bit more" in prompt else
+                                   0 if "what went wrong in that scene" in prompt else
+                                   1 if "pointed question" in prompt else 2]
+            return TeammateReply(text, None, "demo-session", None, 0.0)
         self.names.add(persona.first_name)
         n = self.counts[persona.id] = self.counts.get(persona.id, -1) + 1
         lines = CANNED.get(persona.slug, GENERIC)
@@ -60,6 +73,20 @@ class DemoRunner:
         if "[expr:" in prompt:  # explain chat asks for an expression tag
             text += f" [expr:{EXPRESSIONS[n % len(EXPRESSIONS)]}]"
         return TeammateReply(text, None, "demo-session", None, 0.0)
+
+    @staticmethod
+    def _grade_answer(prompt: str) -> dict[str, Any]:
+        """`works` when his words contain a key word of a must idea, else `off_track` matched to the first wrong idea
+        that has a branch scene (those keep their own label; the rest are other-<n>). The quote is his first words."""
+        musts = [m.group(1) for m in re.finditer(r"(?m)^- \(must\) (.+)$", prompt)]
+        labels = [m.group(1) for m in re.finditer(r"(?m)^- \[([^\]]+)\] ", prompt)]
+        answer = prompt.rsplit("<<<", 1)[-1].split(">>>", 1)[0].strip()
+        said = set(re.findall(r"[a-z][a-z-]{4,}", answer.lower()))
+        quote = " ".join(answer.split()[:8])
+        if any(key_words(m) & said for m in musts):
+            return {"verdict": "works", "quote": quote, "matched_wrong_idea": "", "note": "names a must idea"}
+        branch = next((label for label in labels if not label.startswith("other-")), "")
+        return {"verdict": "off_track", "quote": quote, "matched_wrong_idea": branch, "note": "no must idea named"}
 
     def _grade(self, prompt: str) -> dict[str, Any]:
         """A point is covered when the learner's own lines mention any of its key words."""

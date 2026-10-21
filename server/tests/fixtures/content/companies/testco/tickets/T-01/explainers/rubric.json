@@ -1,0 +1,28 @@
+{
+  "_note": "SERVER-ONLY test rubric for T-01.",
+  "questions": {
+    "h1": {"kind": "predict", "correct": "a", "reveal_md": "9 seconds: the clerk counts to the middle of the pile without lining the slips up."},
+    "w1": {
+      "kind": "open", "topic": "Lining up the slips",
+      "key_ideas": [
+        {"idea": "line the slips up from fastest to slowest before reading the middle one", "must": true},
+        {"idea": "leave the pile itself as it was", "must": false}
+      ],
+      "accepted": ["sort the times first"],
+      "wrong_ideas": [
+        {"id": "first", "idea": "take the first slip that arrives", "branch": "w1-first"},
+        {"idea": "average every slip on the pile"}
+      ],
+      "model_answer_md": "Line every slip up from fastest to slowest before you read the middle one.",
+      "bridge": {"kind": "action", "real": "line the slips up by time first"}
+    },
+    "w2": {
+      "kind": "open", "topic": "An empty day",
+      "key_ideas": [{"idea": "say there were no runners instead of sharing zero slips between zero runners", "must": true}],
+      "accepted": [],
+      "wrong_ideas": [{"idea": "leave the card out"}],
+      "model_answer_md": "Print that nobody ran today instead of an average.",
+      "bridge": {"kind": "rule", "real": "no runners means no average"}
+    }
+  }
+}

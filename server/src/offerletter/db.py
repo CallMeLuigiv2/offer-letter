@@ -69,7 +69,22 @@ CREATE TABLE plan_retro (id TEXT PRIMARY KEY, ticket_id TEXT, drift_json TEXT, a
   created_at TEXT);
 """
 
-MIGRATIONS = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3]  # index + 1 = the schema version that migration produces
+SCHEMA_V4 = """
+CREATE TABLE explainer_answer (id TEXT PRIMARY KEY, ticket_id TEXT, video TEXT, question_id TEXT, kind TEXT,
+  option_id TEXT, body_md TEXT, verdict TEXT, quote TEXT, note_md TEXT, branch_id TEXT, attempt INTEGER, created_at TEXT);
+CREATE INDEX explainer_answer_q ON explainer_answer(ticket_id, video, question_id);
+CREATE TABLE explainer_chat (id TEXT PRIMARY KEY, ticket_id TEXT, video TEXT, question_id TEXT, author TEXT,
+  body_md TEXT, created_at TEXT);
+CREATE INDEX explainer_chat_q ON explainer_chat(ticket_id, video);
+CREATE TABLE explainer_progress (ticket_id TEXT, video TEXT, chapter_id TEXT, done_at TEXT,
+  PRIMARY KEY (ticket_id, video, chapter_id));
+CREATE TABLE explainer_flag (id TEXT PRIMARY KEY, ticket_id TEXT, video TEXT, chapter_id TEXT, t_s REAL,
+  function TEXT, note_md TEXT, created_at TEXT);
+CREATE TABLE explainer_render (ticket_id TEXT, video TEXT, state TEXT, file TEXT, plan_version INTEGER, error TEXT,
+  started_at TEXT, finished_at TEXT, PRIMARY KEY (ticket_id, video));
+"""
+
+MIGRATIONS = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_V4]  # index + 1 = the schema version that migration produces
 _IDENT = re.compile(r"^[a-z_]+$")
 
 

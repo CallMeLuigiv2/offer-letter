@@ -25,7 +25,8 @@ def test_v2_database_with_a_ticket_in_progress_keeps_working(settings: Settings,
         assert c.get("/api/tickets/T-01").json()["stage"] == "quiz"
     # turn the database back into what the V2 server wrote: no stages column, none of the plan tables
     conn = sqlite3.connect(settings.db_path)
-    for table in ("plan", "plan_run", "plan_review", "plan_reply", "plan_retro"):
+    for table in ("plan", "plan_run", "plan_review", "plan_reply", "plan_retro", "explainer_answer", "explainer_chat",
+                  "explainer_progress", "explainer_flag", "explainer_render"):
         conn.execute(f"DROP TABLE {table}")
     conn.execute("ALTER TABLE ticket DROP COLUMN stages_json")
     conn.execute("PRAGMA user_version = 2")
@@ -47,7 +48,7 @@ def test_v2_database_with_a_ticket_in_progress_keeps_working(settings: Settings,
         assert c.get("/api/tickets/T-01").json()["stage"] == "plan"
         assert c.get("/api/tickets/T-01/plan").json()["version"] == 0
     conn = sqlite3.connect(settings.db_path)
-    assert conn.execute("PRAGMA user_version").fetchone()[0] == 3
+    assert conn.execute("PRAGMA user_version").fetchone()[0] == 4
     conn.close()
 
 
