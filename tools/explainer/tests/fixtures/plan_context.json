@@ -1,0 +1,11 @@
+{
+  "ticket_id": "TOY-01",
+  "ticket_title": "Count the late library returns",
+  "company_id": "kilnworks",
+  "plan_version": 3,
+  "lang": "python",
+  "request_md": "Every night, say how many books came back late.",
+  "narrator": "kenji",
+  "story_md": "A small library checks its returns cart every evening.",
+  "personas": {"kenji": {"name": "Kenji Mori", "color": "#5C7080", "pronouns": "he/him"}}
+}

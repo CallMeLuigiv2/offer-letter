@@ -1,0 +1,52 @@
+{
+  "places": {
+    "bakery-front": {
+      "seed": 2003,
+      "prompt": "bakery, bakery shop interior, storefront, wooden counter, glass display case, bread, baguette, croissant, wooden shelves with bread loaves, glass door, shop entrance, large window, warm daylight, sunlight, light rays, potted plant, wooden floor, cream walls, cozy, calm, spacious, anime, anime coloring, scenery, no humans, indoors, wide shot, depth of field, soft lighting, detailed background, masterpiece, high score, great score, absurdres, safe",
+      "negative": "1girl, 1boy, people, person, humans, crowd, character, face, hands, text, english text, sign, signboard, logo, letters, writing, menu board, lowres, bad anatomy, error, cropped, worst quality, low quality, low score, bad score, average score, signature, watermark, username, blurry, jpeg artifacts, cluttered, messy",
+      "size": [
+        1600,
+        900
+      ],
+      "checkpoint": "animagine-xl-4.0.safetensors",
+      "pass1": "1344x768, 28 steps, cfg 5, euler_ancestral",
+      "pass2": "lanczos to 1920x1088, 20 steps, denoise 0.38, seed+1"
+    },
+    "bakery-kitchen": {
+      "seed": 2002,
+      "prompt": "bakery kitchen, commercial kitchen, large oven, deck oven, stainless steel, baking trays, bread on trays, metal rack, cooling rack, flour, wooden workbench, tiled wall, warm lighting, orange glow, spacious, calm, anime, anime coloring, scenery, no humans, indoors, wide shot, depth of field, soft lighting, detailed background, masterpiece, high score, great score, absurdres, safe",
+      "negative": "1girl, 1boy, people, person, humans, crowd, character, face, hands, text, english text, sign, signboard, logo, letters, writing, menu board, lowres, bad anatomy, error, cropped, worst quality, low quality, low score, bad score, average score, signature, watermark, username, blurry, jpeg artifacts, cluttered, messy",
+      "size": [
+        1760,
+        990
+      ],
+      "checkpoint": "animagine-xl-4.0.safetensors",
+      "pass1": "1344x768, 28 steps, cfg 5, euler_ancestral",
+      "pass2": "lanczos to 1920x1088, 20 steps, denoise 0.38, seed+1"
+    },
+    "back-office": {
+      "seed": 2003,
+      "prompt": "small office, back office, wooden desk, open book, ledger, stack of papers, pen, desk lamp, wall clock, bookshelf, binders, window, afternoon, warm sunlight, plant, plain wall, cozy, quiet, calm, spacious, anime, anime coloring, scenery, no humans, indoors, wide shot, depth of field, soft lighting, detailed background, masterpiece, high score, great score, absurdres, safe",
+      "negative": "1girl, 1boy, people, person, humans, crowd, character, face, hands, text, english text, sign, signboard, logo, letters, writing, menu board, lowres, bad anatomy, error, cropped, worst quality, low quality, low score, bad score, average score, signature, watermark, username, blurry, jpeg artifacts, cluttered, messy",
+      "size": [
+        1760,
+        990
+      ],
+      "checkpoint": "animagine-xl-4.0.safetensors",
+      "pass1": "1344x768, 28 steps, cfg 5, euler_ancestral",
+      "pass2": "lanczos to 1920x1088, 20 steps, denoise 0.38, seed+1"
+    },
+    "test-kitchen": {
+      "seed": 2003,
+      "prompt": "small kitchen, test kitchen, clean kitchen, white tiles, small oven, countertop, cutting board, measuring cups, shelf, window, bright, soft daylight, pastel colors, minimalist, tidy, empty room, calm, anime, anime coloring, scenery, no humans, indoors, wide shot, depth of field, soft lighting, detailed background, masterpiece, high score, great score, absurdres, safe",
+      "negative": "1girl, 1boy, people, person, humans, crowd, character, face, hands, text, english text, sign, signboard, logo, letters, writing, menu board, lowres, bad anatomy, error, cropped, worst quality, low quality, low score, bad score, average score, signature, watermark, username, blurry, jpeg artifacts, cluttered, messy",
+      "size": [
+        1920,
+        1080
+      ],
+      "checkpoint": "animagine-xl-4.0.safetensors",
+      "pass1": "1344x768, 28 steps, cfg 5, euler_ancestral",
+      "pass2": "lanczos to 1920x1088, 20 steps, denoise 0.38, seed+1"
+    }
+  }
+}

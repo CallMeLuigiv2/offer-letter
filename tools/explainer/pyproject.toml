@@ -1,0 +1,28 @@
+[project]
+name = "offerletter-explainer"
+version = "0.1.0"
+description = "Offer Letter explainer videos: script JSON -> narrated Manim chapter clips, subtitles and a manifest (ARCHITECTURE §9)."
+requires-python = ">=3.12,<3.13"
+# Versions match fundamentals-studio's lock (the code this grew from), so the
+# uv cache already has every wheel.
+dependencies = [
+    "manim==0.22.0",
+    "kokoro-onnx==0.6.1",
+    "onnxruntime==1.31.0",
+    "numpy==2.5.4",
+    "soundfile==0.14.0",
+    "imageio-ffmpeg==0.6.0",
+    "av==19.0.1",
+    "pillow==12.3.0",
+    "pygments==2.21.0",
+]
+
+[dependency-groups]
+dev = ["pytest==8.4.2"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

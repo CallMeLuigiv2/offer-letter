@@ -1,0 +1,36 @@
+{
+  "v": 1,
+  "ticket_id": "TOY-01",
+  "lang": "python",
+  "weight": "standard",
+  "bridge": {
+    "source": null,
+    "story_md": "A small library checks its returns cart every evening and writes down which books came back late.",
+    "solution_md": "Go through the cart, read each slip, compare the return date with the due date, and count the late ones.",
+    "mapping": []
+  },
+  "data": [
+    {"id": "d-log", "name": "returns log", "kind": "outside", "options": [], "fields": [], "vtype": "path"},
+    {"id": "d-lines", "name": "log lines", "kind": "many_of", "options": [], "fields": [], "item": "text", "vtype": "text"},
+    {"id": "d-returns", "name": "returns", "kind": "many_of", "options": [], "fields": [], "item": "d-return", "vtype": "text"},
+    {"id": "d-return", "name": "return", "kind": "parts", "options": [], "fields": [{"name": "book_id", "type": "str"}, {"name": "due", "type": "date"}, {"name": "back", "type": "date"}], "vtype": "text"},
+    {"id": "d-late", "name": "late returns", "kind": "many_of", "options": [], "fields": [], "item": "d-return", "vtype": "text"},
+    {"id": "d-count", "name": "late count", "kind": "value", "options": [], "fields": [], "vtype": "number"},
+    {"id": "d-report", "name": "report line", "kind": "value", "options": [], "fields": [], "vtype": "text", "output": true}
+  ],
+  "steps": [
+    {"id": "s-read", "label": "read the returns log", "subgoal": "read", "takes": [{"data_id": "d-log", "mode": "read"}], "gives": "d-lines", "fails": "raises", "raises": "OSError", "awaits": false, "risky": false},
+    {"id": "s-parse", "label": "turn each line into a return", "subgoal": "parse", "takes": [{"data_id": "d-lines", "mode": "read"}], "gives": "d-returns", "fails": "raises", "raises": "ValueError", "awaits": false, "risky": true},
+    {"id": "s-late", "label": "keep the ones that came back after their due date", "subgoal": "decide", "takes": [{"data_id": "d-returns", "mode": "read"}], "gives": "d-late", "fails": "no", "awaits": false, "risky": false},
+    {"id": "s-count", "label": "count the late returns", "subgoal": "count", "takes": [{"data_id": "d-late", "mode": "read"}], "gives": "d-count", "fails": "no", "awaits": false, "risky": false},
+    {"id": "s-report", "label": "write the report line", "subgoal": "report", "takes": [{"data_id": "d-count", "mode": "read"}, {"data_id": "d-returns", "mode": "read"}], "gives": "d-report", "fails": "no", "awaits": false, "risky": false},
+    {"id": "s-wire", "label": "wire it into the nightly command", "subgoal": "wire-up", "takes": [{"data_id": "d-report", "mode": "read"}], "gives": null, "fails": "no", "awaits": false, "risky": false}
+  ],
+  "examples": [
+    {"id": "e1", "label": "happy", "rule": "two of five came back late", "form": "text", "text": {"given": "5 returns, 2 late", "expect": "late: 2 of 5"}, "predict": "fail"}
+  ],
+  "walks": [
+    {"id": "w0", "example_id": "e1", "values": {"s-read": "5 lines"}, "done": false, "result": null, "at": "2026-10-21T10:00:00Z"},
+    {"id": "w1", "example_id": "e1", "values": {"s-read": "5 lines", "s-parse": "5 returns", "s-late": "2 returns", "s-count": "2", "s-report": "late: 2 of 5", "s-wire": "printed"}, "done": true, "result": "match", "at": "2026-10-21T10:05:00Z"}
+  ]
+}
