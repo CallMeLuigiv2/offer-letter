@@ -99,7 +99,7 @@
       "doc": {
         "data": [
           {"id": "d-src", "name": "source folder", "kind": "outside", "options": [], "fields": [], "vtype": "path"},
-          {"id": "d-entry", "name": "file entry", "kind": "parts", "options": [], "fields": [{"name": "path", "type": "Path"}, {"name": "size", "type": "int"}], "vtype": "text",
+          {"id": "d-entry", "name": "file entry", "kind": "parts", "options": [], "fields": [{"name": "path", "type": "Path"}, {"name": "size", "type": "int"}, {"name": "decision", "data_id": "d-decision"}], "vtype": "text",
            "because": {"chip": "it has parts"}},
           {"id": "d-decision", "name": "decision", "kind": "one_of", "options": ["copy", "skip unchanged"], "fields": [], "vtype": "text",
            "because": {"chip": "these are the options of one choice"}},

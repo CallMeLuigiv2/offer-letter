@@ -40,6 +40,16 @@ class DemoRunner:
     async def reply(self, persona: Persona, prompt: str, *, model: str | None = None, json_schema: dict | None = None,
                     timeout_s: float = 120, resume: str | None = None) -> TeammateReply:
         self.calls += 1
+        props = (json_schema or {}).get("properties", {})
+        if "intent_md" in props:  # plan review
+            data = {"intent_md": "I read your plan as the steps and examples you wrote, in that order. Right?",
+                    "questions": [{"ask_md": "Which of your examples fails on the current code, and what will it show "
+                                             "once your change is in?",
+                                   "why_md": "That's how we'll both know the change worked."}]}
+            return TeammateReply(json.dumps(data), data, "demo-session", None, 0.0)
+        if "persona_md" in props:  # reply to a plan-review answer
+            data = {"persona_md": "ok. that answers it for now.", "conceded": True}
+            return TeammateReply(json.dumps(data), data, "demo-session", None, 0.0)
         if json_schema is not None:
             data = self._grade(prompt)
             return TeammateReply(json.dumps(data), data, "demo-session", None, 0.0)

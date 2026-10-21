@@ -376,6 +376,21 @@ WorkedPlan = {id, title, lang, kind, narrator: personaId-or-slug, toy_request_md
            predict?: {q_md, options: [{id, text, correct?: true}], why_md}, labels?: string[]}]}
 ```
 
+### 8.6 Contract additions from the build (2026-10-21; details in docs/progress/web-plan.md and server-plan.md)
+
+- PlanDoc: `walks: [{id, example_id, values: {stepId: value}, done, result, at}]` (the run move is done when one
+  walk is complete); `DataCard.output?: boolean` (a result the plan hands back); `Ref.type` may be `"bridge"`;
+  `bridge.breaks?: string` is the one "where it breaks" line (per-row `breaks` also counts).
+- WorkedPlan beats: `doc` is optional; beat docs are partial and merged in order. `Check.fix.op` is an object
+  (`jump` / `make_options` / `move_step` / `set_kind`). `PlanCheckRow.detail` may be an object.
+- `context.story = {source, story_md} | null`: the real-world move's starting story, from `plan.json`'s
+  `story_md` (+ optional `story_source`); later from the "what went wrong" explainer. It frames the problem,
+  never the solution.
+- Server: ticket `stages` never include `done`; locked hints come from the stage before; a failed submit
+  records nothing; review is required for every weight (skipped only on the lunch 503); outline `signature` is
+  the whole header line; drift returns `branch` and `worked_minutes` (minutes); `plan.json` may also set
+  `package`, `lang`, `weight`, `request_md`, `base_ref`.
+
 `verify_kit.py` checks: `plan_key` seam/callers resolve in the repo at `base_ref`; `expected_files` equals
 the reference fix's file set; every fixture starts and becomes ready within 10 s; worked plans parse and
 every `doc` passes the engine's schema (a small Python mirror of the field names, not the checks).

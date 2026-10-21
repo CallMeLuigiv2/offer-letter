@@ -6,6 +6,7 @@
   "reviewer": "kenji",
   "base_ref": "pr_head",
   "worked": ["backup-dry-run"],
+  "story_md": "A bakery promises a customer one fresh batch every second, all afternoon, and an inspector stands at the door with a stopwatch writing down how long each batch takes to reach the customer. Some afternoons the oven stalls for a second or two. The customer (Halyard) wants the inspector's numbers, including the rare worst waits, and wants to know how many batches left the bakery late because the bakers couldn't keep up with their own schedule. There are also only so many trays: when every tray is out, the next batch can't go until one comes back.",
   "fixtures": [
     {
       "id": "fake_server",

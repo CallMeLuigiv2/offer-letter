@@ -176,6 +176,9 @@ def build_context(svc: Services, ticket: Row, kit: kits.TicketKit) -> dict[str, 
         "fixtures": [{"id": f["id"], "label": f.get("label", f["id"]), "args_hint": f.get("args_hint", "")}
                      for f in fixtures_of(kit)],
         "worked": worked_for(svc, kit, lang), "size_hours": ticket.get("size_hours"),
+        # The real-world move's starting story (later: from the "what went wrong" explainer video).
+        "story": ({"source": kit.plan.get("story_source"), "story_md": str(kit.plan["story_md"])}
+                  if kit.plan.get("story_md") else None),
     }
 
 
