@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { Link, NavLink, Outlet, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { api } from '../api';
+import { ExplainerList } from '../explainer/Entry';
 import type { Stage, TicketDetail } from '../api';
 import { currentStage, lockedHint, STAGE_LABEL, stageRoute, stageState, STATUS_LABEL, ticketStages } from '../lib/stages';
 import { useStore } from '../store';
@@ -120,6 +121,9 @@ export function TicketOverview() {
           <Link className="btn" to={`/tickets/${detail.id}/debriefs`}>
             Debriefs ({debriefs.length})
           </Link>
+        )}
+        {(detail.status === 'in_progress' || detail.status === 'done') && (
+          <ExplainerList ticketId={detail.id} refreshKey={`${detail.stage}:${detail.stage_results.length}`} />
         )}
       </aside>
     </div>

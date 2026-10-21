@@ -5,6 +5,7 @@ import { Shell } from './app/Shell';
 import { TaskBoard } from './app/TaskBoard';
 import { Apply } from './onboarding/Apply';
 import { Badge } from './onboarding/Badge';
+import { ExplainerPage } from './explainer/ExplainerPage';
 import { Careers } from './onboarding/Careers';
 import { Offer } from './onboarding/Offer';
 import { Profile } from './onboarding/Profile';
@@ -84,6 +85,7 @@ export function App() {
             <Route path="change" element={<ChangePage />} />
             <Route path="own" element={<OwnPage />} />
             <Route path="debriefs" element={<Debriefs />} />
+            <Route path="explain-video/:video" element={<ExplainerPage />} />
           </Route>
           <Route path="/office" element={<Office />} />
         </Route>

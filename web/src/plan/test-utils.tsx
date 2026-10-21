@@ -20,10 +20,10 @@ export const TEST_CONTEXT: PlanContext = {
   story: null,
 };
 
-export function TestPlan({ initial, children, worked, onDoc }: { initial: PlanDoc; children: ReactNode; worked?: WorkedPlan[]; onDoc?: (d: PlanDoc) => void }) {
+export function TestPlan({ initial, children, worked, onDoc, context: over }: { initial: PlanDoc; children: ReactNode; worked?: WorkedPlan[]; onDoc?: (d: PlanDoc) => void; context?: Partial<PlanContext> }) {
   const [doc, setDoc] = useState(initial);
   const [focus, setFocus] = useState<Ref | null>(null);
-  const context = useMemo(() => ({ ...TEST_CONTEXT, worked: worked ?? [] }), [worked]);
+  const context = useMemo(() => ({ ...TEST_CONTEXT, worked: worked ?? [], ...over }), [worked, over]);
   const value = useMemo<PlanCtxValue>(
     () => ({
       ticketId: doc.ticket_id,

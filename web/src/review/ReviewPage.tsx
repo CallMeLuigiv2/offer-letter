@@ -10,6 +10,8 @@ import { errText, useAsync } from '../ui/hooks';
 import { Markdown } from '../ui/Markdown';
 import { StageGate, useTicketCtx } from '../ticket/TicketLayout';
 import { DiffView, lineDomId } from './DiffView';
+import { FlagsPanel, VideoLink } from '../explainer/Entry';
+import { pathForFunction } from '../explainer/machine';
 
 const VERDICTS: { id: Verdict; label: string; hint: string }[] = [
   { id: 'approve', label: 'Approve', hint: 'It is good to merge as it is.' },
@@ -97,11 +99,14 @@ function Results({
           <h2>{result.passed ? 'Review passed' : 'Not passed yet'}</h2>
           <p className="muted">{scoreSummary(score)}. Recall {Math.round(score.recall * 100)}%, precision {Math.round(score.precision * 100)}%.</p>
         </div>
-        {result.passed ? (
-          <Link className="btn primary" to={stageRoute(ticketId, 'quiz')}>Go to the quiz</Link>
-        ) : (
-          <button className="btn primary" onClick={onAgain}>Review again</button>
-        )}
+        <div className="row">
+          <VideoLink ticketId={ticketId} video="what-went-wrong">Watch what went wrong</VideoLink>
+          {result.passed ? (
+            <Link className="btn primary" to={stageRoute(ticketId, 'quiz')}>Go to the quiz</Link>
+          ) : (
+            <button className="btn primary" onClick={onAgain}>Review again</button>
+          )}
+        </div>
       </header>
 
       <div className="result-cols">
@@ -181,6 +186,7 @@ function ReviewInner() {
   const [focus, setFocus] = useState<{ path: string; line: number; side: Side } | null>(null);
   const [showDesc, setShowDesc] = useState(true);
   const done = stageState(detail, 'review') === 'done';
+  const { data: flags } = useAsync(() => api.explainerFlags(detail.id).catch(() => []), [detail.id]);
 
   useEffect(() => {
     if (!prId) return;
@@ -247,6 +253,8 @@ function ReviewInner() {
           <span className="muted small"><code>{pr.pr.head}</code> into <code>{pr.pr.base}</code></span>
         </div>
         <div className="row">
+          <VideoLink ticketId={detail.id} video="how-it-works">Explain it to me (video)</VideoLink>
+          {(done || result) && <VideoLink ticketId={detail.id} video="what-went-wrong">What went wrong (video)</VideoLink>}
           <div className="seg" role="group" aria-label="Diff layout">
             <button className={mode === 'unified' ? 'on' : ''} onClick={() => setMode('unified')}>Unified</button>
             <button className={mode === 'split' ? 'on' : ''} onClick={() => setMode('split')}>Split</button>
@@ -283,6 +291,14 @@ function ReviewInner() {
             ))}
           </ul>
           <button className="link-btn small" onClick={() => setShowDesc(!showDesc)}>{showDesc ? 'Hide' : 'Show'} PR description</button>
+          <FlagsPanel
+            flags={flags ?? []}
+            onPick={(f) => {
+              const p = pathForFunction(f.function, pr.files.map((x) => x.path));
+              if (p) setPath(p);
+              else toast('info', `That flag is about ${f.function ?? 'this chapter'}. Find it in the files list.`);
+            }}
+          />
         </nav>
         <div className="diff-pane">
           {showDesc && (

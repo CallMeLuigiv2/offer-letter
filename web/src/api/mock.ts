@@ -5,6 +5,7 @@ import changeJson from '../../../content/companies/kilnworks/tickets/KLN-01/chan
 import planJson from '../../../content/companies/kilnworks/tickets/KLN-01/plan.json';
 import workedBackup from '../../../content/plans/worked/backup-dry-run.json';
 import { emit } from './events';
+import { createMockExplainers } from './mockExplainers';
 import { DIFF_FILES, ISSUES, KILN_OUTLINE, KLN01_PLAN_KEY, KLN01_STORY_MD, PERSONAS, QUIZ } from './mockdata';
 import {
   defaultWeight,
@@ -257,6 +258,27 @@ function planOf(id: string): MockPlan {
 }
 const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x)) as T;
 
+// ---- explainer videos (§9.4) -------------------------------------------------------
+function stageOpen(id: string, stage: Stage): boolean {
+  try {
+    requireStage(id, stage);
+    return true;
+  } catch {
+    return false;
+  }
+}
+const explainers = createMockExplainers({
+  wait,
+  nid,
+  now,
+  started: (id) => {
+    const t = requireTicket(id);
+    return t.status === 'in_progress' || t.status === 'done';
+  },
+  reviewSubmitted: (id) => stageResults.some((r) => r.ticket_id === id && r.stage === 'review'),
+  plan: (id) => ({ open: stageOpen(id, 'plan'), steps: planOf(id).doc?.steps.length ?? 0, version: planOf(id).version }),
+});
+
 function planContext(t: Ticket): PlanContext {
   const kln = t.id === 'KLN-01';
   const kind = (planJson.kind as TicketKind) ?? 'change';
@@ -273,6 +295,7 @@ function planContext(t: Ticket): PlanContext {
     worked: WORKED_PLANS.filter((w) => planJson.worked.includes(w.id)),
     size_hours: t.size_hours,
     story: kln ? { source: null, story_md: KLN01_STORY_MD } : null,
+    bridge_seed: explainers.bridgeSeed(t.id),
   };
 }
 const PR_HEAD = 'theo/open-loop-arrivals';
@@ -417,6 +440,8 @@ function planHash(doc: PlanDoc): string {
 
 // ---- the API -----------------------------------------------------------------
 export const mockApi: Api = {
+  ...explainers.api,
+
   async health() {
     await wait(60);
     return { ok: true, claude: { loggedIn: true, authMethod: 'claude.ai' }, version: '0.1.0-mock' };
@@ -966,8 +991,13 @@ export function setMockGovernor(mode: Governor['mode']) {
   emit({ type: 'governor.updated', data: governor });
 }
 
-/** Jump the mock workspace to a ticket stage (e2e and demos): `?mock=plan` opens KLN-01 at its plan stage. */
-export function seedMock(at: 'plan') {
+export type MockSeed = 'review' | 'after-review' | 'plan';
+
+/**
+ * Jump the mock workspace to a ticket stage (e2e and demos): `?mock=plan` opens KLN-01 at its plan stage,
+ * `?mock=review` at a fresh review, `?mock=after-review` just after the review was submitted (and passed).
+ */
+export function seedMock(at: MockSeed) {
   player = { id: 'player_1', name: 'Luigi Saint', pronouns: 'he/him', avatar_json: JSON.stringify({ hairStyle: 1, hairColor: '#4a3426', skin: '#a8734a', shirt: '#f38ba8' }), created_at: ago(3000) };
   const cat = (catalogJson as { companies: CatalogCompany[] }).companies.find((x) => x.id === 'kilnworks');
   company = { id: 'kilnworks', name: 'Kilnworks', pitch: cat?.pitch, team_name: 'Serving', stage_label: cat?.stage_label, domain: cat?.domain, repos: [{ name: 'kiln-bench', description: 'Load generator and benchmarking tools' }] };
@@ -980,10 +1010,14 @@ export function seedMock(at: 'plan') {
     ...['theo', 'dana', 'ines', 'kenji', 'amara'].map((s) => mk(`kilnworks.dm.${s}`, s, 'dm', null, [`kilnworks.${s}`])),
   ];
   for (const ch of channels) messages[ch.id] = [];
-  messages['kilnworks.dm.amara'].push({ id: nid('m'), channel_id: 'kilnworks.dm.amara', author: 'kilnworks.amara', body_md: 'Hi! I posted a follow-up ask for kiln-bench on KLN-01. Plan it with Kenji before you start coding.', thread_root_id: null, created_at: ago(30) });
+  if (at === 'plan') {
+    messages['kilnworks.dm.amara'].push({ id: nid('m'), channel_id: 'kilnworks.dm.amara', author: 'kilnworks.amara', body_md: 'Hi! I posted a follow-up ask for kiln-bench on KLN-01. Plan it with Kenji before you start coding.', thread_root_id: null, created_at: ago(30) });
+  }
   setupPayload = { title: 'Set up your laptop', steps: [{ id: 'clone', label: 'Your clone of kiln-bench exists', path: 'C:\\Users\\Owner\\OfferLetter\\work\\kilnworks\\kiln-bench' }] };
-  tickets = freshTickets().map((t) => (t.id === 'KLN-01' ? { ...t, status: 'in_progress', stage: at, started_at: ago(240) } : t));
-  for (const st of ['review', 'quiz', 'explain'] as Stage[]) {
+  const stage: Stage = at === 'review' ? 'review' : at === 'after-review' ? 'quiz' : 'plan';
+  tickets = freshTickets().map((t) => (t.id === 'KLN-01' ? { ...t, status: 'in_progress', stage, started_at: ago(240) } : t));
+  const passed: Stage[] = at === 'review' ? [] : at === 'after-review' ? ['review'] : ['review', 'quiz', 'explain'];
+  for (const st of passed) {
     stageResults.push({ id: nid('sr'), ticket_id: 'KLN-01', stage: st, passed: 1, detail_json: '{}', created_at: ago(120) });
     saveDebrief(st, `## ${st[0].toUpperCase()}${st.slice(1)} debrief\n\nPassed.`);
   }
@@ -1001,7 +1035,8 @@ export function passPlanForTest(id = 'KLN-01') {
 if (typeof window !== 'undefined') {
   (window as unknown as { __mock: unknown }).__mock = { setGovernor: setMockGovernor, passPlan: passPlanForTest };
   const params = new URLSearchParams(location.search);
-  if (params.get('mock') === 'plan') seedMock('plan');
+  const seed = params.get('mock');
+  if (seed === 'plan' || seed === 'review' || seed === 'after-review') seedMock(seed);
   const g = params.get('governor');
   if (g === 'lunch' || g === 'thrifty') setMockGovernor(g);
 }

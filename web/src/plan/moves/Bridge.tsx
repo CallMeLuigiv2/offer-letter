@@ -1,4 +1,7 @@
+import { useEffect } from 'react';
+import type { BridgeSeed } from '../../api/types';
 import { usePlan } from '../ctx';
+import { WhatWentWrongLink } from '../PlanVideo';
 import { BRIDGE_STARTS, newData, newExample, newStep, uid, type BridgeKind, type BridgeRow, type PlanDoc, type Ref } from '../engine';
 import { ChipGroup, InlineChecks, Menu, TextField } from '../bits';
 import { Markdown } from '../../ui/Markdown';
@@ -29,9 +32,33 @@ function targetName(doc: PlanDoc, to: Ref | null): string | null {
   return null;
 }
 
+export const SEED_SOURCE = 'explainer:what-went-wrong';
+
+/** His accepted "what went wrong" answers as solution lines: one per topic, in his words. */
+export function seedLines(seeds: BridgeSeed[]): string {
+  return seeds.map((x) => `${x.topic}: ${x.real.trim()}`).join('\n');
+}
+
 export function BridgeMove() {
-  const { doc, update, readOnly } = usePlan();
+  const { doc, update, readOnly, context } = usePlan();
   const b = doc.bridge;
+  const seeds = context.bridge_seed ?? [];
+  const seedsLeft = seeds.filter((x) => !b.mapping.some((m) => m.real.trim().toLowerCase() === x.real.trim().toLowerCase()));
+
+  // §9.5: an empty solution starts from his own answers in the video (never over anything he wrote).
+  useEffect(() => {
+    if (readOnly || !seeds.length || doc.bridge.solution_md.trim() || doc.bridge.source === SEED_SOURCE) return;
+    update(
+      (d) => (d.bridge.solution_md.trim() ? d : { ...d, bridge: { ...d.bridge, source: SEED_SOURCE, solution_md: seedLines(seeds) } }),
+      { action: 'bridge_seed', to: seeds.map((x) => x.question_id) },
+    );
+  }, [readOnly, seeds.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const addSeedRows = (list: BridgeSeed[]) =>
+    update(
+      (d) => ({ ...d, bridge: { ...d.bridge, mapping: [...d.bridge.mapping, ...list.map((x) => ({ id: uid('b'), real: x.real.trim(), kind: x.kind, to: null }))] } }),
+      { action: 'bridge_seed_rows', to: list.map((x) => x.question_id) },
+    );
   const setB = (patch: Partial<typeof b>) => update((d) => ({ ...d, bridge: { ...d.bridge, ...patch } }));
   const setRow = (id: string, patch: Partial<BridgeRow>) => update((d) => ({ ...d, bridge: { ...d.bridge, mapping: d.bridge.mapping.map((m) => (m.id === id ? { ...m, ...patch } : m)) } }));
   const addLine = (start: string) => setB({ solution_md: `${b.solution_md.trim() ? `${b.solution_md.replace(/\s+$/, '')}\n` : ''}${start} ` });
@@ -80,6 +107,29 @@ export function BridgeMove() {
     <div className="move move-bridge" data-testid="move-bridge">
       <h2>Real world</h2>
       <p className="lead-s">Put the problem in a real-life situation. Say how it would be solved there, in your words. Then turn each line into something the program has. That's the plan, said to a computer.</p>
+      <WhatWentWrongLink />
+      {!readOnly && seedsLeft.length > 0 && (
+        <div className="callout small" data-testid="bridge-seeds">
+          <p>
+            <b>From your answers in the "what went wrong" video.</b> Each one can become a row below.
+          </p>
+          <ul className="seed-list">
+            {seedsLeft.map((x) => (
+              <li key={x.question_id}>
+                <span className="tag">{x.kind}</span> <span className="muted">{x.topic}:</span> {x.real}{' '}
+                <button type="button" className="link-btn small" onClick={() => addSeedRows([x])} aria-label={`Add "${x.topic}" as a row`}>
+                  + add as a row
+                </button>
+              </li>
+            ))}
+          </ul>
+          {seedsLeft.length > 1 && (
+            <button type="button" className="btn small" onClick={() => addSeedRows(seedsLeft)}>
+              Add all as rows
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="bridge-grid">
         <div className="bridge-story">

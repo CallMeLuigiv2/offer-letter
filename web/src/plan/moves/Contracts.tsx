@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { usePlan } from '../ctx';
 import { listMove, newData, newStep, REASON_CHIPS, SUBGOALS, type Fails, type Mode, type StepCard } from '../engine';
 import { ChipGroup, InlineChecks, ReasonChips, SymbolPicker, useFocusCard } from '../bits';
+import { PlanVideoPanel } from '../PlanVideo';
 
 const NEW = '__new__';
 
@@ -250,6 +251,7 @@ export function ContractsMove() {
           + new step
         </button>
       )}
+      <PlanVideoPanel />
     </div>
   );
 }

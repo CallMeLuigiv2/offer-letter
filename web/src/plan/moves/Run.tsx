@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { usePlan } from '../ctx';
+import { PlanVideoPanel } from '../PlanVideo';
 import { exampleTitle, expectedOf, recordWalk, surprise, surpriseExample, SURPRISE_ID, walk } from '../engine';
 
 const VERDICT: Record<string, string> = { match: 'Matches the example', mismatch: "Doesn't match the example", not_comparable: "Can't compare yet" };
@@ -123,6 +124,7 @@ export function RunMove() {
           </ul>
         </div>
       </div>
+      <PlanVideoPanel />
     </div>
   );
 }

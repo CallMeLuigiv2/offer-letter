@@ -87,4 +87,22 @@ export const realApi: Api = {
   planToBranch: (t, overwrite) => req('POST', `/tickets/${encodeURIComponent(t)}/plan/to-branch`, overwrite ? { overwrite: true } : {}),
   planDrift: (t, branch) => req('GET', `/tickets/${encodeURIComponent(t)}/plan/drift${q({ branch })}`),
   planRetro: (t, answers) => req('POST', `/tickets/${encodeURIComponent(t)}/plan/retro`, { answers }),
+
+  // §9.4 explainer videos
+  explainers: (t) => req('GET', `/tickets/${encodeURIComponent(t)}/explainers`),
+  explainer: (t, v) => req('GET', `/tickets/${encodeURIComponent(t)}/explainers/${encodeURIComponent(v)}`),
+  explainerPredict: (t, v, question_id, option_id) => req('POST', `${video(t, v)}/answer`, { question_id, option_id }),
+  explainerOpen: (t, v, question_id, body_md) => req('POST', `${video(t, v)}/answer`, { question_id, body_md }),
+  explainerFollowup: (t, v, question_id, body_md) => req('POST', `${video(t, v)}/followup`, { question_id, body_md }),
+  explainerShowMe: (t, v, question_id) => req('POST', `${video(t, v)}/show-me`, { question_id }),
+  explainerProgress: (t, v, chapter_id) => req('POST', `${video(t, v)}/progress`, { chapter_id }),
+  explainerFlag: (t, v, flag) => req('POST', `${video(t, v)}/flags`, flag),
+  explainerFlags: (t) => req('GET', `/tickets/${encodeURIComponent(t)}/explainer-flags`),
+  myPlanVideo: (t) => req('GET', `/tickets/${encodeURIComponent(t)}/explainers/my-plan`),
+  renderMyPlan: (t) => req('POST', `/tickets/${encodeURIComponent(t)}/explainers/my-plan/render`),
+  confirmMyPlan: (t, reply, note_md) => req('POST', `/tickets/${encodeURIComponent(t)}/explainers/my-plan/confirm`, note_md ? { reply, note_md } : { reply }),
 };
+
+function video(ticketId: string, videoId: string): string {
+  return `/tickets/${encodeURIComponent(ticketId)}/explainers/${encodeURIComponent(videoId)}`;
+}
