@@ -456,21 +456,29 @@ function gets a chapter.
 
 | Method + path | Body → response |
 |---|---|
-| `GET /tickets/{id}/explainers` | → `[{id, title, unlocked, locked_reason, chapters_total, chapters_done, questions_total, questions_done}]` (+ `my-plan` when the ticket has a plan stage) |
-| `GET /tickets/{id}/explainers/{video}` | → `{manifest, order: [chapterId], progress: {chapters_done: [], answers: {qid: {verdict, option_id?, body_md?, seen_not_solved}}, chats: {qid: [msg]}, flags: []}}`. `order` puts the issue chapters he missed in review first (after the intro). 409 with `locked_reason` when locked. |
-| `GET /media/explainers/{company}/{ticket}/{video}/{file}` | the clip / vtt, with HTTP Range support |
-| `POST /tickets/{id}/explainers/{video}/answer` | `{question_id, option_id?}` (predict) → `{verdict: "correct"\|"incorrect", reveal_md}`; `{question_id, body_md}` (open) → `{verdict: "works"\|"different_but_valid"\|"partly"\|"off_track"\|"cant_tell", quote, note_md, branch?: {id, file, vtt, duration_s}, persona_md?, can_show_me}` |
-| `POST /tickets/{id}/explainers/{video}/followup` | `{question_id, body_md}` → `{verdict, persona_md, can_show_me}` (re-graded; the persona asks "what went wrong there, and how would you fix it?" after a branch, then climbs: pointed question → observation in story terms → `can_show_me`) |
-| `POST /tickets/{id}/explainers/{video}/show-me` | `{question_id}` → `{model_answer_md}`; marks it `seen_not_solved` (comes back in the debrief) |
+| `GET /tickets/{id}/explainers` | → `[{id, title, mode, unlock, unlocked, locked_reason, media_ready, chapters_total, chapters_done, questions_total, questions_done}]` (+ a `my-plan` row with `state` when the ticket has a plan stage) |
+| `GET /tickets/{id}/explainers/{video}` | → `{manifest, media_base, media_ready, order: [chapterId], progress: {chapters_done: [], answers: {qid: AnswerState}, chats: {qid: [ChatMsg]}, flags: []}}`. The manifest is built from the script (structure) plus the rendered manifest (media); `branches` is never sent; `who`/`narrator` are persona ids; a chapter whose clip isn't on disk has `file: null` and `lines: [{who, say}]` (the player shows the narration as text). `order` = intro, the issue chapters his latest review missed, then the rest. 409 with `locked_reason` when locked. `AnswerState = {kind, verdict, option_id, body_md, accepted, seen_not_solved, attempts, followups, can_show_me, rung, reveal_md?, correct_option_id?}` (a predict's first answer counts). `ChatMsg` carries `expression` for teammates. |
+| `GET /media/explainers/{company}/{ticket}/{video}/{file}` | the clip / vtt, with HTTP Range (206). Locked videos and unknown files 404; a branch clip 404s until one of his answers matched that branch. Types mp4/webm/vtt/png/jpg/webp/m4a/mp3 (never `manifest.json`). My-plan clips: `…/{ticket}/my-plan/{plan_version}/{file}` |
+| `POST /tickets/{id}/explainers/{video}/answer` | `{question_id, option_id}` (predict) → `{kind, verdict: "correct"\|"incorrect", correct_option_id, reveal_md}`; `{question_id, body_md}` (open) → `{kind, verdict: "works"\|"different_but_valid"\|"partly"\|"off_track"\|"cant_tell", accepted, quote, note_md (accepted only), branch: {id, file\|null, vtt, duration_s, lines?}\|null, persona_id, persona_md (null when accepted), can_show_me, rung}`. Branches play on the first answer only, for `partly`/`off_track` answers matched to a wrong idea that has one. A second `/answer` on an unaccepted question is a follow-up; 409 once accepted. |
+| `POST /tickets/{id}/explainers/{video}/followup` | `{question_id, body_md}` → `{verdict, accepted, quote, note_md, persona_id, persona_md, can_show_me, rung}`, re-graded on everything he said. Ladder: rung 0 = "what went wrong there, and how would you fix it?" (after a branch), 1 = a pointed question, 2 = an observation in story terms (stays at 2); `cant_tell` asks him to say more; `can_show_me` after one failed follow-up; an accepted follow-up gets the fixed line "That works. Let's keep going." |
+| `POST /tickets/{id}/explainers/{video}/show-me` | `{question_id}` → `{model_answer_md}`; 409 until `can_show_me`; stores one `show_me` row (verdict `seen_not_solved`); the plan submit debrief lists those topics under "Seen, not solved" |
 | `POST /tickets/{id}/explainers/{video}/progress` | `{chapter_id}` → progress |
 | `POST /tickets/{id}/explainers/{video}/flags` | `{chapter_id, t_s, note_md?}` → flag (the chapter's `function` is copied on); `GET /tickets/{id}/explainer-flags` → flags, shown beside the diff on the review page |
-| `POST /tickets/{id}/explainers/my-plan/render` | → `{state}`; renders his current plan in the background (409 if no steps); `GET /tickets/{id}/explainers/my-plan` → `{state, manifest?, plan_version}`; `POST …/my-plan/confirm` `{reply: "yes"\|"no"\|"partly", note_md?}` (the plan review sees it) |
+| `GET /tickets/{id}/explainers/my-plan` | → `{state: none\|rendering\|ready\|failed, plan_version, current_version, stale, error, manifest, media_base, confirm}` (409 before the plan stage). A `rendering` row older than the timeout + 30 s with no live job (server restart) turns `failed`. |
+| `POST /tickets/{id}/explainers/my-plan/render` | → `{state}`; 409 without a step; one render at a time; a ready render of the same plan version is reused. Runs `uv run --project tools/explainer python -m explainer.plan_video --plan P --context C --out <home>/.data/explainers/<ticket>/my-plan/<version>/` (cwd `tools/explainer`, `VIRTUAL_ENV` stripped, 6-minute timeout that stops the whole process tree). `ctx.json` = `{ticket_id, ticket_title, company_id, plan_version, lang, request_md, narrator, story_md, personas: {slug: {name, color, pronouns}}, portraits_dir, out_dir}`. Ready = exit 0 and a manifest whose chapter file exists. |
+| `POST /tickets/{id}/explainers/my-plan/confirm` | `{reply: "yes"\|"no"\|"partly", note_md?}`; 409 unless a render is ready; stored as an `explainer_answer` row (`kind = "confirm"`, `option_id` = reply, `attempt` = plan version); the plan review prompt sees it ("HIS PLAN AS A VIDEO") |
 
 Unlock: `how-it-works` when the ticket is started; `what-went-wrong` once his review of the ticket's PR is
-submitted (any verdict); `my-plan` in the plan stage once the plan has a step. Grader: Haiku with a JSON schema
-`{verdict, quote, matched_wrong_idea, note}`, given only the question, the rubric and his answer; `quote` must
-be a substring of his answer (normalised) or it is asked once more, then `cant_tell`. The persona (the
-question's `who`) only talks; the grader decides. Neither ever writes code. Events: `explainer.chat`.
+submitted (any verdict: the review debrief already lists what he missed, so the video gives nothing away that
+he hasn't seen; it then helps him re-review); `my-plan` in the plan stage once the plan has a step. Grader:
+Haiku with a JSON schema `{verdict, quote, matched_wrong_idea, note}`, given only the question, the rubric (key
+ideas, accepted, wrong ideas; never the model answer) and his answers; `quote` must be a substring of his words
+(normalised) or it is asked once more, then `cant_tell`. The persona (the question's `who`) only talks; the
+grader decides. The persona's line is guarded twice (the plan review's code guard, and no 6-word run from the
+model answer, key ideas, accepted or `bridge.real`), retried once, then a fixed fallback line. Governor lunch:
+open answers and follow-ups 503 and nothing is recorded; predicts, progress and flags still work. Events:
+`explainer.chat` (each ChatMsg), `explainer.render` (`{ticket_id, video, state, plan_version, error}`), and
+`teammate.typing` on channel `explainer:<ticket>:<video>` while grading or answering.
 
 ### 9.5 Hand-off to the plan
 
