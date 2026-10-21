@@ -224,3 +224,145 @@ generator + benchmarking tools against a local fake OpenAI-compatible
 streaming server). First ticket: **KLN-01 "Fix the load generator before we
 trust its p99"**, type review-to-own, L1. Cast in
 `content/companies/kilnworks/cast.md`.
+
+## 8. The Plan stage (added 2026-10-21, decisions D9–D12)
+
+Why and the research behind it: `docs/proposals/planning-stage.md`, `research/07`, `research/08`.
+Before he implements anything in a ticket, he plans: reads the code, restates the ask, writes examples
+that actually run, names the pieces and step contracts, walks an example through the steps, records
+decisions and a pre-mortem, then a teammate reviews the plan (intent first, at most two questions). The
+plan is his; nothing in this stage writes code for him.
+
+### 8.1 Stages per ticket
+
+- `ticket` gains `stages_json` (schema V3): the kit's `stages` with `"plan"` inserted directly before the
+  first implementation stage (`change`, `build`, `fix`, `implement`), unless the kit's `plan.json` says
+  `"enabled": false`. KLN-01 becomes `review → quiz → explain → plan → change → own`.
+- Existing rows without `stages_json` are filled on startup from their kit (his in-progress KLN-01 is at
+  `review`, so nothing he has done changes). `STAGES` stops being global: `next_stage`, `require_stage`
+  and the web stepper use the ticket's own list. Ticket rows in every response carry `stages: string[]`.
+- `LOCKED_HINT["plan"] = "Pass the stage before it first."`, `LOCKED_HINT["change"]` becomes
+  "Finish your plan first." when `plan` precedes it.
+
+### 8.2 The plan document (client-owned JSON, `PlanDoc`)
+
+Written only by the web app (`PUT`), stored whole. Server-owned state (example runs, review, submit) lives
+in its own tables and is never inside the doc. Unknown fields are kept (forward compatible). Ids are short
+strings made by the client.
+
+```
+PlanDoc = {
+  v: 1, ticket_id, lang: "python" | "rust",
+  weight: "lite" | "standard" | "full",
+  move: MoveId,                                   // where he is (UI only)
+  watched: string[],                              // worked-plan ids he has replayed
+  read: { seam: SymbolRef[], callers: SymbolRef[], note: string },
+  restate: { given: string, produce: string, done_when: string },
+  marks: [{ id, text, kind: "rule" | "question", sent_message_id?: string }],   // phrases tapped in the request
+  examples: Example[],
+  data: DataCard[], steps: StepCard[],
+  decisions: [{ id, choice, because, instead_of, would_change_if, confirmed_by?: exampleId }],
+  premortem: [{ id, text, step_id?: string }],     // standard/full: exactly 3 non-empty
+  scope: { appetite_blocks: number | null, no_gos: string[], first_slice: exampleId | null },
+  thinking: [{ id, at, move, kind: "think"|"assume"|"unsure"|"because"|"stuck"|"next", text, via: "chip"|"text", ref?: Ref }],
+  history: [{ at, move, action, ref?: Ref, from?: unknown, to?: unknown }],   // capped at 300, oldest dropped
+  kept: { [checkKey: string]: string },            // flags he keeps, with his reason
+  derived: { checks: Check[], moves: { [m in MoveId]?: boolean }, computed_at }  // written by the engine on every save
+}
+MoveId = "watch" | "read" | "restate" | "examples" | "pieces" | "contracts" | "run" | "decide" | "review"
+SymbolRef = { path: string, symbol: string }       // symbol = qualname, e.g. "ClosedLoopRunner._one"
+Ref = { type: "example"|"data"|"step"|"decision"|"premortem"|"mark", id: string }
+Reason = { chip?: string, text?: string }
+Example = { id, label: "happy"|"boundary"|"error", rule: string, form: "call"|"cli"|"text",
+  call?: { target: string /* dotted import path, e.g. "kiln_bench.metrics.percentile" */, args: string /* python source of the arguments */,
+           expect: string /* python expression, or an exception class name when compare = "raises" */,
+           compare: "eq" | "approx" | "raises" | "truthy" },
+  cli?:  { args: string /* after the program name, shell-split */, fixture: string | null, fixture_args: string,
+           checks: [{ kind: "exit"|"stdout_contains"|"stderr_contains"|"json_has"|"json_eq"|"json_gt"|"json_lt", path?: string /* dotted, e.g. "ttft_ms.p99.9" is NOT allowed: keys with dots use a list form ["ttft_ms","p99.9"] */, value?: string }] },
+  text?: { given: string, expect: string },
+  predict: "pass" | "fail" | "error" | null,       // his prediction on the current code, before running
+  because?: Reason }
+DataCard = { id, name, kind: "parts"|"one_of"|"many_of"|"value"|"outside"|null,
+  options: string[],                                // one_of
+  fields: [{ name, data_id?: string, type?: string }],   // parts
+  item?: string,                                    // many_of: a data_id or a type name
+  vtype: "text"|"number"|"bool"|"path"|"time"|"bytes"|"duration",   // value
+  because?: Reason }
+StepCard = { id, label, subgoal: "read"|"parse"|"validate"|"decide"|"transform"|"count"|"store"|"report"|"handle-failure"|"wire-up"|"measure"|null,
+  existing?: SymbolRef | null,                      // changes an existing function
+  new_fn?: string | null, where?: string | null,    // a new function and the module path it goes in
+  takes: [{ data_id: string, mode: "read" | "change" | "consume" }],
+  gives: string | null, fails: "no" | "none" | "raises", raises?: string,
+  awaits: boolean, risky: boolean, because?: Reason }
+Check = { key /* stable, e.g. "flow.no_source:<step>:<data>" */, id /* rule id */, severity: "wont_work"|"costly"|"note",
+  ref?: Ref, msg, ask /* L1 question */, observe /* L2 observation */, fix?: { label, op } }
+```
+
+Language packs give the words: Python `read` = "reads it", `change` = "changes it in place", `consume` =
+"uses it up (an iterator or stream)"; `none` = "may return None"; `raises` = "raises …"; `awaits` =
+"async: awaits I/O". Rust `read` = `&`, `change` = `&mut`, `consume` = owned; `none` = `Option`,
+`raises` = `Result`.
+
+**Engine** (`web/src/plan/engine/`, pure TypeScript, no React, no app imports, its own README; the reusable
+core): `model.ts` (types, `emptyPlan`, `migrate`), `lang/python.ts`, `lang/rust.ts`, `checks.ts`
+(deterministic checks → `Check[]`), `moves.ts` (done-rules per move and weight), `runner.ts` (desk-check
+walker), `layout.ts` (map from contracts), `coach.ts` (shared prompt wording + output guard), `fade.ts`.
+The server never re-implements these: it reads `derived` for the gate and for the review prompt.
+
+Moves required per weight (`moves.ts`): lite = restate, examples (≥2 incl. one boundary or error),
+contracts-lite (every step has a label and takes or gives), decide-scope (appetite + first slice).
+standard = read (change tickets), restate, examples (≥3, ≥1 boundary, ≥1 error), pieces (every card has a
+kind), contracts, run (one example walked to the end), decide (≥1 decision with because + instead_of,
+3 pre-mortem lines, appetite, ≥1 no-go, first slice). full = standard + every external step has a failure
+line + ≥1 decision with `would_change_if`. `watch` is required only until he has watched 2 worked plans.
+`review` is done by the server (§8.4).
+
+### 8.3 Tables (schema V3)
+
+| Table | Columns |
+|---|---|
+| `ticket` | + `stages_json` |
+| `plan` | ticket_id (PK), doc_json, version (int, +1 per PUT), updated_at, submitted_at |
+| `plan_run` | id, ticket_id, example_id, ref (branch or commit it ran on), outcome (`pass`/`fail`/`error`/`skipped`), output (≤1500 chars), predicted, created_at |
+| `plan_review` | id, ticket_id, round, persona_id, intent_md, intent_reply (`yes`/`no`/`partly`/null), intent_note, questions_json, created_at |
+| `plan_reply` | id, review_id, question_id, choice (`change`/`disagree`/`lost`/`show_fix`), body_md, persona_md, rung, created_at |
+| `plan_retro` | id, ticket_id, drift_json, answers_json, persona_md, created_at |
+
+### 8.4 HTTP API (prefix `/api`; all 409 unless the ticket has unlocked `plan`)
+
+| Method + path | Body → response |
+|---|---|
+| `GET /tickets/{id}/plan` | → `{doc: PlanDoc \| null, version, context, runs: {exampleId: Run}, review: Review \| null, submitted_at}`; `context = {lang, weight_default, kind: "change"\|"build"\|"perf"\|"incident"\|"design"\|"experiment", request_md, requester: personaId \| null, reviewer: personaId, repo, base_ref, fixtures: [{id, label, args_hint}], worked: WorkedPlan[], size_hours}` |
+| `PUT /tickets/{id}/plan` | `{doc, version}` → `{version}`; 409 `{"error": …}` if `version` isn't the stored one (the client reloads) |
+| `GET /tickets/{id}/plan/outline` | → `{ref, files: [{path, symbols: [{name, qualname, kind: "function"\|"async_function"\|"method"\|"class", line, signature, doc}]}]}` from Python `ast` over the repo at `base_ref` (the PR head for review-to-own; else main). Cached per ref. |
+| `POST /tickets/{id}/plan/check` | → `{checks: [{id, ok, severity, msg, detail}]}`: seam symbols exist; callers list vs real call sites (`found`, `missed` count only, `wrong` names); `existing` steps resolve; `call` targets import-resolve; `cli` fixtures are known. Never names a missed caller. |
+| `POST /tickets/{id}/plan/examples/run` | `{example_ids?: string[]}` → `{runs: Run[]}`. Compiles `call`/`cli` examples to one pytest file in a temp dir, runs it against a temp checkout of `base_ref` (never his working tree), with the kit's fixtures; `Run = {example_id, outcome, output, predicted, matched: bool \| null, ref, created_at}`. Text examples → `skipped`. |
+| `POST /tickets/{id}/plan/review` | → `Review = {id, round, persona_id, intent_md, intent_reply, questions: [{id, ref?, ask_md, why_md, status: "open"\|"answered", rung, replies: Reply[]}], created_at}`. Sonnet, JSON schema. Input: request, his doc (incl. reasons, thinking, history signals), `derived.checks` not kept. Protocol: restate his intent in one or two sentences ("I read your plan as …"); then ≤2 questions, failing checks first, then one judgment question; never a design, never code. A reply containing code (```, `def `, `class `, `import `) is rejected and asked again once, then the stage shows a plain apology. Governor `lunch` → 503 `{"error": "Kenji's out to lunch until HH:MM. You can submit without a review; he'll read it later."}` |
+| `POST /tickets/{id}/plan/review/intent` | `{reply: "yes"\|"no"\|"partly", note?}` → Review |
+| `POST /tickets/{id}/plan/review/reply` | `{question_id, choice, body_md}` → the question (with the persona's short answer, Haiku). `lost` moves one rung: 1 pointed question → 2 observation → 3 worked example on a toy (never his code) → 4 only for `show_fix`: what to change in the plan, in words, logged. `change`/`disagree` mark it answered; the persona concedes only to a reason that holds up (research/04 §2.3). |
+| `POST /tickets/{id}/plan/submit` | → `{passed, missing: string[], debrief_md}`. Passes when: every required move of his weight is done (`derived.moves`), no `wont_work` check open (fixed or `kept` with a reason), every runnable example has a prediction and ≥1 run, and the latest review's questions are all answered (or the governor was in `lunch`). Records `stage_result(plan)`; the debrief lists skipped moves for a lite plan. |
+| `POST /tickets/{id}/plan/to-branch` | `{overwrite?: bool}` → `{written: [paths]}`. Only on his click: writes `PLAN.md` and `tests/plan/test_plan_examples.py` into his clone's working tree (current branch). 409 if a file exists and differs, unless `overwrite`. |
+| `GET /tickets/{id}/plan/drift?branch=` | after `change` passed → `{planned_files, touched_files, planned_symbols, touched_symbols, examples: [{id, status}], appetite_blocks, worked_minutes, silent: [{kind, name}]}` |
+| `POST /tickets/{id}/plan/retro` | `{answers: {surprised, next_time, why: {name: reason}}}` → `{persona_md, debrief_md}` (Haiku, blameless: asks about the plan's assumptions, never him) |
+
+Events: `plan.review` (the Review), `plan.reply` (`{review_id, question}`). `stage.result` as usual.
+
+### 8.5 Kit additions (all optional; tickets without them still get a plan stage)
+
+```
+tickets/<ID>/plan.json      {enabled: true, kind, weight?, requester?, reviewer?, base_ref?: "pr_head"|"main",
+                             request_md?: (defaults: change.json request_md for review-to-own, else brief_md),
+                             worked: [workedPlanId], fixtures: [{id, label, args_hint, start: [argv with {port}],
+                             ready: {kind: "http", path} | {kind: "line", regex}, url_template: "http://127.0.0.1:{port}",
+                             inject: {kind: "arg", flag: "--url"}}]}
+tickets/<ID>/plan_key.json  SERVER-ONLY (like answer_key): {seam: [SymbolRef], callers: [SymbolRef],
+                             behaviours: [{id, kind_md}], traps: [{id, tag, md}], expected_files: [path]}
+content/plans/worked/<id>.json   shared worked plans (WorkedPlan)
+WorkedPlan = {id, title, lang, kind, narrator: personaId-or-slug, toy_request_md,
+  steps: [{move: MoveId, think_md, doc: PlanDoc-partial (the state after this beat), false_start?: {think_md, doc},
+           predict?: {q_md, options: [{id, text, correct?: true}], why_md}, labels?: string[]}]}
+```
+
+`verify_kit.py` checks: `plan_key` seam/callers resolve in the repo at `base_ref`; `expected_files` equals
+the reference fix's file set; every fixture starts and becomes ready within 10 s; worked plans parse and
+every `doc` passes the engine's schema (a small Python mirror of the field names, not the checks).

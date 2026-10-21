@@ -1,6 +1,6 @@
 # Proposal: the Plan stage (structured thinking before implementing)
 
-Status: **DRAFT, waiting on Luigi's decisions (bottom of this file).** 2026-10-21.
+Status: **ACCEPTED 2026-10-21** (D9–D12): Offer Letter only (RustPlease retired), app + button to branch, required with lite allowed, voice with v0.2. Contract: ARCHITECTURE §8.
 Sources: `research/07-planning-learning-science.md`, `research/08-planning-industry-practice.md`,
 and the RustPlease prototype review (https://claude.ai/artifact/8nMTMA85ixfPEPjYAYAsYQ).
 
