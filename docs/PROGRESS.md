@@ -22,6 +22,12 @@ D5/D6 in the morning).
 | F. Teammate runner (real) + governor | folded into B | — | unit + 1 live smoke | |
 | G. Integration + end-to-end KLN-01 run | lead + web | done | `pnpm e2e:real` passes the full KLN-01 journey on the real kit (fake teammates); launcher `Start Offer Letter.cmd` / `start.ps1` tested: 11 s to ready, deep links OK | SPA fallback added (f1a5829); waiting on content's last persona sheets (dana, amara, leo) + verify_kit, then a real-teammate persona check |
 | I. Desktop shell, Tauri 2 (S5) | agent `desktop` (sonnet) | done (d5ab399) | 2.0 s cold start, no stray python after kill, /office 165 fps in WebView2 | tray, call window, hotkey, toast need real clicks/keys or an installed build (S6 with Luigi) |
+| K. Plan stage: research + contract (ARCHITECTURE §8, D9–D12) | lead | done (7a0c8ba, 0159987, 25ac320) | research/07, 08; proposal accepted | bridge move added from Luigi's idea |
+| K1. Plan engine + Plan page (web) | agent `web-plan` (opus) | running | — | web/src/plan/engine is the reusable core |
+| K2. Plan stage server (stages per ticket, plan API, outline, example runs, review, submit, to-branch, drift) | agent `server-plan` (sonnet) | running | — | |
+| K3. KLN-01 plan content (plan.json, plan_key, worked plan, reviewer habits) | lead | done (2ac886a) | JSON parses; verify_kit after K2 | |
+| L. Explainer videos: research + proposal (D13–D16) | lead | done (f8a21d9, f82e45c) | research/09 | build after K lands |
+| L0. Spike S12 movie-quality beat | lead | done (229971b) | 1080p60 ≈ 3.2× real time; lip-flap works | backgrounds + portrait framing to fix |
 
 ## Log
 
@@ -32,3 +38,4 @@ D5/D6 in the morning).
 - 2026-10-19 06:30 — content kit committed (verify_kit 73/0). Lead re-ran `pnpm e2e:real` against the production build served by the server (latest server, fake teammates): full KLN-01 journey passes in 1.0 min. Persona eval started (real teammate runs).
 - 2026-10-19 06:50 — watchdog: all v0.1 tracks done and committed (latest e7c5b12); persona-eval doing a full 19-scenario regression run; nothing stalled.
 - 2026-10-19 07:00 — v0.1 DONE. Persona eval + regression 19/19; explain prompt generalised; README written; watchdog cron deleted. Waiting on Luigi: D5 voice blind test, D6 first-job lock.
+- 2026-10-21 — Plan stage (D9–D12) and explainer videos (D13–D16) decided with Luigi; research 07–09; contract §8; web-plan + server-plan agents building; KLN-01 plan content committed; spike S12 passed.
