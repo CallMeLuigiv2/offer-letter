@@ -1,6 +1,6 @@
 # Proposal: "Explain it to me" videos (PRs, tickets, papers)
 
-Status: **DRAFT 2026-10-21** — his answers so far: movie-quality look; wrong answer = a short scene of his
+Status: **ACCEPTED 2026-10-21** (D13–D16; build after the Plan stage lands). History: — his answers so far: movie-quality look; wrong answer = a short scene of his
 idea, then the teammate asks what went wrong and how he'd fix it; typing now, voice with v0.2; wants
 "how the code works", "what's going wrong" and "how my plan works" videos in real-life terms. Open:
 the review-stage rule (my take below) and the small questions at the bottom.
@@ -29,7 +29,7 @@ Every chapter has one-click "replay this chapter" (learners seek back from a que
 subtitles. Questions interrupt every 60–90 s (interpolated questions roughly halve mind-wandering,
 Szpunar 2013). Mostly clicks; about one in three pauses is an open answer (research/09 §1, §5 of 07).
 
-## 3. Review-stage rule (my recommendation, waiting on his OK)
+## 3. Review-stage rule (accepted, D14)
 
 A video that *says* what's wrong before he submits turns the review into "find the line for a bug I was
 told about"; noticing problems nobody pointed out is the skill the job tests most (research/01). Video 1
