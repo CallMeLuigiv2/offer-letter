@@ -1,0 +1,7 @@
+{
+  "seam": [{"path": "stats.py", "symbol": "percentile"}],
+  "callers": [{"path": "report.py", "symbol": "summarize"}],
+  "behaviours": [{"id": "b1", "kind_md": "percentile sorts its input"}],
+  "traps": [{"id": "t1", "tag": "empty", "md": "empty input divides by zero"}],
+  "expected_files": ["report.py", "stats.py"]
+}

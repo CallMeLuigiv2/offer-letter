@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "kind": "change",
+  "package": "statscli",
+  "worked": ["toy-split"],
+  "fixtures": [
+    {
+      "id": "fake-numbers",
+      "label": "Fake numbers server",
+      "args_hint": "",
+      "start": ["python", "fakesrv.py", "--port", "{port}"],
+      "ready": {"kind": "http", "path": "/numbers"},
+      "url_template": "http://127.0.0.1:{port}",
+      "inject": {"kind": "arg", "flag": "--url"}
+    }
+  ]
+}

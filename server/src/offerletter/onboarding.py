@@ -7,7 +7,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from . import catalog, git_service, kits
+from . import catalog, git_service, kits, stages
 from .db import Row, decode, dumps, new_id, now
 from .errors import ApiError
 from .services import Services
@@ -128,7 +128,8 @@ def _insert_rows(svc: Services, pack: kits.CompanyPack, player: Row, first_id: s
         db.insert("ticket", id=t["id"], company_id=pack.id, title=t["title"], type=t.get("type", "review-to-own"),
                   level=t.get("level", "L1"), size_hours=t.get("size_hours"),
                   status="assigned" if first else "backlog", stage="review",
-                  assignee="player" if first else None, kit_path=str(staged), started_at=None, done_at=None)
+                  assignee="player" if first else None, kit_path=str(staged), started_at=None, done_at=None,
+                  stages_json=dumps(kit.stages()))
         pr_file = tdir / "pr.json"
         if pr_file.exists():
             pr = kits._json(pr_file)
@@ -185,7 +186,7 @@ def state(svc: Services) -> dict[str, Any]:
         company = {**entry, **raw}
         personas = db.where("persona", company_id=cid)
         channels = [decode(c) for c in db.where("channel", company_id=cid)]
-        tickets = db.where("ticket", company_id=cid)
+        tickets = [stages.with_stages(t) for t in db.where("ticket", company_id=cid)]
         setup = setup_checklist(svc, kits.load_pack(svc.settings.content_dir, cid), _first_ticket_id_of(tickets))
     return {"player": player, "employment": employment, "company": company, "personas": personas,
             "channels": channels, "tickets": tickets, "setup": setup, "governor": svc.governor.row()}

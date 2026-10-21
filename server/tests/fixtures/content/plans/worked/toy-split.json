@@ -1,0 +1,25 @@
+{
+  "id": "toy-split",
+  "title": "Split a restaurant bill",
+  "lang": "python",
+  "kind": "change",
+  "narrator": "lead",
+  "toy_request_md": "Split a bill between friends so the shares add up to the total.",
+  "steps": [
+    {
+      "move": "restate",
+      "think_md": "Say it back first.",
+      "doc": {"restate": {"given": "a total and a number of people", "produce": "one share each", "done_when": "the shares add up"}},
+      "predict": {"q_md": "What happens to 10 cents between 3 people?",
+                  "options": [{"id": "a", "text": "3.33 each", "correct": true}, {"id": "b", "text": "4 each"}],
+                  "why_md": "Cents don't divide evenly."}
+    },
+    {
+      "move": "examples",
+      "think_md": "Boundary: one person.",
+      "doc": {"examples": [{"id": "e1", "label": "boundary", "rule": "one person pays all", "form": "text",
+                            "text": {"given": "100, 1", "expect": "[100]"}, "predict": null}]},
+      "false_start": {"think_md": "I almost wrote only the happy case.", "doc": {"examples": []}}
+    }
+  ]
+}

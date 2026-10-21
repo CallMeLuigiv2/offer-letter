@@ -31,16 +31,20 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "server" / "src"))  # plan_code / plan_schema: one reader
 
 from kitlib import diffs  # noqa: E402
 from kitlib.build import build_company, remote_path  # noqa: E402
 from kitlib.gitx import GitError, git, git_bytes  # noqa: E402
+from offerletter import plan_code, plan_schema  # noqa: E402
 from kitlib.pack import CONTENT_DIR, Pack, PackError, Ticket, read_json, tree_files  # noqa: E402
 
 SLACK = 2  # server/review.py matches a comment within [line_start - 2, line_end + 2]
 SERVER_PYTEST = ["uv", "run", "--with", "pytest", "pytest"]  # server config.py pytest_cmd
 GRADER_COPY = "_grader"  # server change.py
-SECRET_FILES = {"answer_key.json", "quiz.json", "explain.json", "change.json", "debrief.md"}
+SECRET_FILES = {"answer_key.json", "quiz.json", "explain.json", "change.json", "debrief.md", "plan.json",
+                "plan_key.json"}
+FIXTURE_READY_S = 10  # a plan fixture must be ready this fast (ARCHITECTURE 8.5)
 BANNED = re.compile(r"answer[_ ]key|why_not_a_bug|planted|\bdecoy|KLN\d\d-\d", re.IGNORECASE)
 
 
@@ -176,6 +180,102 @@ def check_answer_key(c: Checks, t: Ticket, kit: dict, head_dir: Path) -> None:
                      f"{t.id} {x['id']} and {y['id']} can't be matched by the same comment")
 
 
+
+# -- 2c. the Plan stage's optional parts (ARCHITECTURE 8.5) ---------------------------------
+
+def start_fixture(fixture: dict, root: Path) -> tuple[bool, str, float]:
+    """Starts a plan fixture the way the server does and waits for ready. (ready, detail, seconds)."""
+    import socket
+    import threading
+    import urllib.error
+    import urllib.request
+
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+    tokens = list(fixture["start"])
+    if tokens and tokens[0] == "python":
+        tokens = ["uv", "run", "--locked", "python", *tokens[1:]]
+    argv = [t.replace("{port}", str(port)) for t in tokens]
+    url = fixture.get("url_template", "http://127.0.0.1:{port}").replace("{port}", str(port))
+    env = {k: v for k, v in os.environ.items() if k not in ("VIRTUAL_ENV", "UV_PROJECT_ENVIRONMENT")}
+    started = time.perf_counter()
+    proc = subprocess.Popen(argv, cwd=root, env={**env, "PYTHONUNBUFFERED": "1"}, stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
+    lines: list[str] = []
+    threading.Thread(target=lambda: lines.extend(x.rstrip() for x in proc.stdout), daemon=True).start()
+    ready = fixture.get("ready") or {"kind": "http", "path": "/"}
+    try:
+        while time.perf_counter() - started < FIXTURE_READY_S:
+            if proc.poll() is not None:
+                return False, "exited early: " + " | ".join(lines[-5:]), time.perf_counter() - started
+            if ready.get("kind") == "line":
+                if any(re.search(ready.get("regex", ""), x) for x in lines):
+                    return True, "", time.perf_counter() - started
+            else:
+                try:
+                    urllib.request.urlopen(url + ready.get("path", "/"), timeout=1).close()
+                    return True, "", time.perf_counter() - started
+                except urllib.error.HTTPError:
+                    return True, "", time.perf_counter() - started
+                except OSError:
+                    pass
+            time.sleep(0.1)
+        return False, f"not ready after {FIXTURE_READY_S} s: " + " | ".join(lines[-5:]), FIXTURE_READY_S
+    finally:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], capture_output=True)
+        else:
+            proc.kill()
+
+
+def check_plan(c: Checks, pack: Pack, t: Ticket, quick: bool, head_dir: Path, main_dir: Path) -> None:
+    """plan.json / plan_key.json: seam and callers resolve at base_ref, expected_files equals the reference fix's
+    changed files, every fixture starts and is ready within 10 s. Both files are optional."""
+    plan_path, key_path = t.root / "plan.json", t.root / "plan_key.json"
+    plan = read_json(plan_path) if plan_path.is_file() else {}
+    key = read_json(key_path) if key_path.is_file() else {}
+    if not plan and not key:
+        return
+    base = head_dir if (plan.get("base_ref") or "pr_head") == "pr_head" else main_dir
+    c.ok(plan.get("enabled", True) in (True, False), f"{t.id}: plan.json enabled is a boolean")
+    for field in ("requester", "reviewer"):
+        if plan.get(field):
+            c.ok(plan[field].split(".")[-1] in pack.personas, f"{t.id}: plan.json {field} {plan[field]!r} is a persona")
+    if key:
+        files = plan_code.outline(base, include_tests=False)
+        index = plan_code.symbol_index(files)
+        for group in ("seam", "callers"):
+            for ref in key.get(group, []):
+                c.ok((ref["path"], ref["symbol"]) in index,
+                     f"{t.id}: plan_key {group} {ref['path']}::{ref['symbol']} resolves at base_ref")
+        reference = t.root / "reference"
+        changed = sorted(tree_files(reference))  # the reference fix is an overlay: its file set is the change
+        expected = sorted(key.get("expected_files", []))
+        c.ok(expected == changed, f"{t.id}: plan_key expected_files equals the reference fix's file set "
+                                  f"({len(changed)})", f"expected_files only: {sorted(set(expected) - set(changed))}\n"
+                                                         f"reference only: {sorted(set(changed) - set(expected))}")
+        c.ok(all("id" in x for x in key.get("traps", []) + key.get("behaviours", [])),
+             f"{t.id}: plan_key traps and behaviours have ids")
+    if not quick:
+        for fixture in plan.get("fixtures", []):
+            ok, detail, secs = start_fixture(fixture, base)
+            c.ok(ok, f"{t.id}: plan fixture {fixture['id']} starts and is ready in {secs:.1f} s (limit "
+                     f"{FIXTURE_READY_S})", detail)
+
+
+def check_worked_plans(c: Checks, content: Path) -> None:
+    base = content / "plans" / "worked"
+    for path in sorted(base.glob("*.json")) if base.is_dir() else []:
+        try:
+            data = read_json(path)
+        except PackError as exc:
+            c.ok(False, f"worked plan: {exc}")
+            continue
+        problems = plan_schema.validate_worked(data)
+        c.ok(not problems, f"worked plan {path.name} parses and every doc has valid field names", "\n".join(problems[:12]))
+
+
 # -- 3. quiz -------------------------------------------------------------------------------
 
 def check_quiz(c: Checks, t: Ticket, kit: dict, checkouts: dict[str, Path]) -> None:
@@ -263,6 +363,11 @@ def secret_prose(t: Ticket, kit: dict) -> list[tuple[str, str]]:
     texts += [(f"quiz {q['id']} explanation", q.get("explanation_md", "")) for q in kit["quiz.json"].get("questions", [])]
     texts += [("explain rubric", r.get("point", "")) for r in kit["explain.json"].get("rubric", [])]
     texts.append(("debrief", (t.root / "debrief.md").read_text(encoding="utf-8")))
+    key_path = t.root / "plan_key.json"
+    if key_path.is_file():
+        plan_key = read_json(key_path)
+        texts += [(f"plan_key trap {x.get('id')}", x.get("md", "")) for x in plan_key.get("traps", [])]
+        texts += [(f"plan_key behaviour {x.get('id')}", x.get("kind_md", "")) for x in plan_key.get("behaviours", [])]
     out = []
     for label, text in texts:
         for piece in QUOTED.split(text):
@@ -353,7 +458,7 @@ def check_leaks(c: Checks, pack: Pack, tickets: list[Ticket], kits: dict[str, di
 
 # -- main ----------------------------------------------------------------------------------
 
-def verify(pack: Pack, only: str | None, quick: bool, keep: bool) -> Checks:
+def verify(pack: Pack, only: str | None, quick: bool, keep: bool, content_dir: Path = CONTENT_DIR) -> Checks:
     c = Checks()
     tmp = Path(tempfile.mkdtemp(prefix=f"verify-kit-{pack.slug}-"))
     home = tmp / "home"
@@ -385,6 +490,7 @@ def verify(pack: Pack, only: str | None, quick: bool, keep: bool) -> Checks:
                                    f"[{last_line(done)}]", tail(done))
         check_answer_key(c, t, kit, head_dir)
         main_dir = tmp / f"{t.repo}-main"
+        check_plan(c, pack, t, quick, head_dir, main_dir)
         for name, source in kit["change.json"].get("grader_copies", {}).items():
             grader = t.root / kit["change.json"].get("grader_dir", "grader")
             c.ok((grader / name).read_bytes() == (main_dir / source).read_bytes(),
@@ -394,6 +500,7 @@ def verify(pack: Pack, only: str | None, quick: bool, keep: bool) -> Checks:
             check_grader(c, t, kit, bare, tmp)
 
     print()
+    check_worked_plans(c, content_dir)
     check_leaks(c, pack, tickets, kits, home)
     if keep:
         print(f"\nkept {tmp}")
@@ -416,7 +523,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"verify_kit: {exc}", file=sys.stderr)
         return 1
     started = time.perf_counter()
-    c = verify(pack, args.only, args.quick, args.keep)
+    c = verify(pack, args.only, args.quick, args.keep, args.content)
     print(f"\n{c.passed} checks passed, {len(c.failed)} failed ({time.perf_counter() - started:.0f} s)")
     for msg in c.failed:
         print(f"  FAIL  {msg}")

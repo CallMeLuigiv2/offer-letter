@@ -10,7 +10,7 @@ import json
 import shutil
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -19,7 +19,9 @@ from .catalog import load_company_json
 from .config import Settings
 from .teammates.personas import Persona, load_persona, pick_role
 
-STAGES = ["review", "quiz", "explain", "change", "own", "done"]
+STAGES = ["review", "quiz", "explain", "change", "own", "done"]  # the default order when a ticket has no list
+IMPLEMENTATION_STAGES = ("change", "build", "fix", "implement")  # `plan` goes directly before the first of these
+PLAN_FILES = ("plan.json", "plan_key.json")  # optional kit parts; server-only like the answer key
 SERVER_ONLY = {"pr", "pr.patch", "reference"}  # parts of a kit that are not copied to .data/kits
 
 
@@ -83,10 +85,21 @@ class TicketKit:
     quiz: dict[str, Any]
     explain: dict[str, Any]
     change: dict[str, Any]
+    plan: dict[str, Any] = field(default_factory=dict)  # plan.json ({} when the kit has none)
+    plan_key: dict[str, Any] = field(default_factory=dict)  # plan_key.json: server-only seam, callers, traps
 
     @property
     def id(self) -> str:
         return self.ticket["id"]
+
+    @property
+    def plan_enabled(self) -> bool:
+        return self.plan.get("enabled", True) is not False
+
+    def stages(self) -> list[str]:
+        """This ticket's own stage list (ARCHITECTURE 8.1): the kit's stages with `plan` before the first
+        implementation stage, unless plan.json switches it off. `done` is not part of the list."""
+        return compute_stages(self.ticket.get("stages"), self.plan_enabled)
 
     @property
     def issues(self) -> list[dict[str, Any]]:
@@ -113,11 +126,60 @@ class TicketKit:
         return default
 
 
+def compute_stages(kit_stages: list[str] | None, plan_enabled: bool = True) -> list[str]:
+    """The kit's stages (default review..own) with `plan` inserted before the first implementation stage."""
+    stages = [s for s in (kit_stages or STAGES) if s != "done"]
+    if not plan_enabled or "plan" in stages:
+        return stages
+    for i, name in enumerate(stages):
+        if name in IMPLEMENTATION_STAGES:
+            return [*stages[:i], "plan", *stages[i:]]
+    if "own" in stages:  # a kit with no implementation stage: plan still comes before ownership
+        i = stages.index("own")
+        return [*stages[:i], "plan", *stages[i:]]
+    return [*stages, "plan"]
+
+
+def _optional_json(path: Path) -> dict[str, Any]:
+    return _json(path) if path.exists() else {}
+
+
 def load_kit(root: Path) -> TicketKit:
     return TicketKit(
         root=root, ticket=_json(root / "ticket.json"), answer_key=_json(root / "answer_key.json"),
         quiz=_json(root / "quiz.json"), explain=_json(root / "explain.json"), change=_json(root / "change.json"),
+        plan=_optional_json(root / "plan.json"), plan_key=_optional_json(root / "plan_key.json"),
     )
+
+
+def worked_plans_dir(content_dir: Path) -> Path:
+    return content_dir / "plans" / "worked"
+
+
+def load_worked_plans(content_dir: Path) -> dict[str, dict[str, Any]]:
+    """Shared worked plans (content/plans/worked/*.json) by id. Unreadable files are skipped, not fatal."""
+    out: dict[str, dict[str, Any]] = {}
+    base = worked_plans_dir(content_dir)
+    for path in sorted(base.glob("*.json")) if base.is_dir() else []:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(data, dict):
+            out[str(data.get("id") or path.stem)] = data
+    return out
+
+
+def refresh_plan_files(source: Path, staged: Path) -> bool:
+    """Copies plan.json / plan_key.json from the content kit into an already staged kit (kits staged before the
+    plan stage existed don't have them). Returns True when anything changed."""
+    changed = False
+    for name in PLAN_FILES:
+        src, dest = source / name, staged / name
+        if src.is_file() and staged.is_dir() and (not dest.is_file() or dest.read_bytes() != src.read_bytes()):
+            shutil.copyfile(src, dest)
+            changed = True
+    return changed
 
 
 def stage_kit(source: Path, kits_dir: Path, company: str) -> Path:

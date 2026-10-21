@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from conftest import (
-    join, pass_explain, pass_quiz, pass_review, push_reference_branch, push_unfixed_branch, start_ticket, wait_for,
+    join, pass_explain, pass_plan, pass_quiz, pass_review, push_reference_branch, push_unfixed_branch, start_ticket, wait_for,
 )
 from fastapi.testclient import TestClient
 
@@ -236,6 +236,10 @@ def test_review_stage_machine_end_to_end(client: TestClient, runner: FakeRunner,
     assert client.get("/api/tickets/T-01/change").status_code == 409
 
     assert pass_explain(client, runner)["passed"]
+    locked = client.get("/api/tickets/T-01/change")
+    assert locked.status_code == 409 and locked.json()["error"] == "Finish your plan first."
+    assert client.get("/api/tickets/T-01").json()["stages"] == ["review", "quiz", "explain", "plan", "change", "own"]
+    assert pass_plan(client, runner)["passed"]
     change = client.get("/api/tickets/T-01/change").json()
     assert change["from_persona"] == "testco.lead" and change["branch_hint"] == "fix/summary"
 

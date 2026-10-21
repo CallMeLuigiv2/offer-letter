@@ -21,6 +21,7 @@ from .director import Director
 from .errors import ApiError
 from .events import EventBus
 from .routes import build_router
+from .stages import backfill
 from .services import CommandRunner, Services, run_command
 from .teammates.governor import Governor
 from .teammates.runner import AuthStatus, ClaudeRunner, DisabledRunner, GovernedRunner, TeammateRunner, check_auth
@@ -30,6 +31,7 @@ def create_app(settings: Settings, runner: TeammateRunner | None = None, command
                rng: random.Random | None = None) -> FastAPI:
     """`runner` replaces the real Claude runner (tests pass a FakeRunner and skip the sign-in check)."""
     db = Database(settings.db_path)
+    backfill(db, settings)  # V3: every ticket row gets its own stage list; staged kits get plan.json / plan_key.json
     bus = EventBus()
     governor = Governor(db, bus)
     # The real runner needs the sign-in check, which runs at startup; until then teammates say so.

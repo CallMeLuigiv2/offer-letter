@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from . import catalog, change, explain, git_service, kits, onboarding, quiz, review, stages
 from .db import Row, decode, dumps, new_id, now
 from .errors import ApiError
+from .plan_routes import build_plan_router
 from .services import Services
 from .teammates.personas import Persona, persona_from_row
 from .teammates.runner import TeammateError, TeammatesUnavailable
@@ -169,7 +170,7 @@ def build_router(svc: Services) -> APIRouter:
 
     @r.get("/tickets")
     async def list_tickets() -> list[Row]:
-        return db.where("ticket")
+        return [stages.with_stages(t) for t in db.where("ticket")]
 
     @r.get("/tickets/{ticket_id}")
     async def get_ticket(ticket_id: str) -> dict[str, Any]:
@@ -177,7 +178,7 @@ def build_router(svc: Services) -> APIRouter:
         kit = kit_for(ticket)
         pr = db.one("SELECT id FROM pull_request WHERE ticket_id = ?", (ticket_id,))
         results = [decode(s) for s in db.where("stage_result", ticket_id=ticket_id)]
-        return {**ticket, "brief_md": kit.ticket.get("brief_md", ""), "pr_id": pr["id"] if pr else None,
+        return {**stages.with_stages(ticket), "brief_md": kit.ticket.get("brief_md", ""), "pr_id": pr["id"] if pr else None,
                 "stage_results": results}
 
     @r.get("/tickets/{ticket_id}/debriefs")
@@ -405,4 +406,5 @@ def build_router(svc: Services) -> APIRouter:
             svc.director.note(manager.id, f"{player_name()} took ownership of {repo} after {ticket_id}.")
         return {"repo_url": url}
 
+    r.include_router(build_plan_router(svc))
     return r

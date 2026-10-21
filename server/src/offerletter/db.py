@@ -54,7 +54,22 @@ CREATE TABLE work_session (id TEXT PRIMARY KEY, company_id TEXT, minutes INTEGER
   standup_channel_id TEXT, thanked INTEGER DEFAULT 0);
 """
 
-MIGRATIONS = [SCHEMA_V1, SCHEMA_V2]  # index + 1 = the schema version that migration produces
+SCHEMA_V3 = """
+ALTER TABLE ticket ADD COLUMN stages_json TEXT;
+CREATE TABLE plan (ticket_id TEXT PRIMARY KEY, doc_json TEXT NOT NULL, version INTEGER NOT NULL DEFAULT 1,
+  updated_at TEXT, submitted_at TEXT);
+CREATE TABLE plan_run (id TEXT PRIMARY KEY, ticket_id TEXT, example_id TEXT, ref TEXT, outcome TEXT, output TEXT,
+  predicted TEXT, created_at TEXT);
+CREATE INDEX plan_run_ticket ON plan_run(ticket_id);
+CREATE TABLE plan_review (id TEXT PRIMARY KEY, ticket_id TEXT, round INTEGER, persona_id TEXT, intent_md TEXT,
+  intent_reply TEXT, intent_note TEXT, questions_json TEXT, created_at TEXT);
+CREATE TABLE plan_reply (id TEXT PRIMARY KEY, review_id TEXT, question_id TEXT, choice TEXT, body_md TEXT,
+  persona_md TEXT, rung INTEGER, created_at TEXT);
+CREATE TABLE plan_retro (id TEXT PRIMARY KEY, ticket_id TEXT, drift_json TEXT, answers_json TEXT, persona_md TEXT,
+  created_at TEXT);
+"""
+
+MIGRATIONS = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3]  # index + 1 = the schema version that migration produces
 _IDENT = re.compile(r"^[a-z_]+$")
 
 
@@ -111,6 +126,13 @@ class Database:
         with self._lock:
             self._conn.execute(sql, args)
             self._conn.commit()
+
+    def run_count(self, sql: str, args: tuple[Any, ...] = ()) -> int:
+        """Runs a write and returns how many rows it changed (for compare-and-set updates)."""
+        with self._lock:
+            cur = self._conn.execute(sql, args)
+            self._conn.commit()
+            return cur.rowcount
 
     def one(self, sql: str, args: tuple[Any, ...] = ()) -> Row | None:
         with self._lock:
