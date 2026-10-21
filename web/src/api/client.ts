@@ -8,7 +8,7 @@ export class ApiError extends Error {
   }
 }
 
-type Method = 'GET' | 'POST';
+type Method = 'GET' | 'POST' | 'PUT';
 
 async function req<T>(method: Method, path: string, body?: unknown): Promise<T> {
   let res: Response;
@@ -73,4 +73,18 @@ export const realApi: Api = {
   governor: () => req('GET', '/governor'),
   debriefs: (t) => req('GET', `/tickets/${encodeURIComponent(t)}/debriefs`),
   clockIn: (minutes) => req('POST', '/clock-in', { minutes }),
+
+  // §8.4 the Plan stage
+  plan: (t) => req('GET', `/tickets/${encodeURIComponent(t)}/plan`),
+  savePlan: (t, doc, version) => req('PUT', `/tickets/${encodeURIComponent(t)}/plan`, { doc, version }),
+  planOutline: (t) => req('GET', `/tickets/${encodeURIComponent(t)}/plan/outline`),
+  planCheck: (t) => req('POST', `/tickets/${encodeURIComponent(t)}/plan/check`),
+  planRun: (t, example_ids) => req('POST', `/tickets/${encodeURIComponent(t)}/plan/examples/run`, example_ids ? { example_ids } : {}),
+  planReview: (t) => req('POST', `/tickets/${encodeURIComponent(t)}/plan/review`),
+  planIntent: (t, reply, note) => req('POST', `/tickets/${encodeURIComponent(t)}/plan/review/intent`, note ? { reply, note } : { reply }),
+  planReply: (t, question_id, choice, body_md) => req('POST', `/tickets/${encodeURIComponent(t)}/plan/review/reply`, { question_id, choice, body_md }),
+  planSubmit: (t) => req('POST', `/tickets/${encodeURIComponent(t)}/plan/submit`),
+  planToBranch: (t, overwrite) => req('POST', `/tickets/${encodeURIComponent(t)}/plan/to-branch`, overwrite ? { overwrite: true } : {}),
+  planDrift: (t, branch) => req('GET', `/tickets/${encodeURIComponent(t)}/plan/drift${q({ branch })}`),
+  planRetro: (t, answers) => req('POST', `/tickets/${encodeURIComponent(t)}/plan/retro`, { answers }),
 };

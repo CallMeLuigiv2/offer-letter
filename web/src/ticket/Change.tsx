@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import type { ChangeResult } from '../api';
-import { stageRoute } from '../lib/stages';
+import { stageRoute, ticketStages } from '../lib/stages';
+import { YourPlanPanel } from '../plan/YourPlanPanel';
 import { findPersona, personaRef } from '../lib/util';
 import { useStore } from '../store';
 import { errText, useAsync } from '../ui/hooks';
@@ -50,7 +51,8 @@ function ChangeInner() {
     }
   };
 
-  return (
+  const hasPlan = ticketStages(detail).includes('plan');
+  const body = (
     <div className="change" data-testid="change">
       <section className="request">
         <header className="request-from">
@@ -115,6 +117,13 @@ function ChangeInner() {
           {result.passed && <Link className="btn primary" to={stageRoute(detail.id, 'own')}>Go to Own</Link>}
         </section>
       )}
+    </div>
+  );
+  if (!hasPlan) return body;
+  return (
+    <div className="change-wrap">
+      {body}
+      <YourPlanPanel ticketId={detail.id} />
     </div>
   );
 }

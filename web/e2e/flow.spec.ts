@@ -5,7 +5,7 @@ const shot = (page: Page, name: string) => page.screenshot({ path: `${SHOTS}/${n
 
 declare global {
   interface Window {
-    __mock: { setGovernor: (m: 'normal' | 'thrifty' | 'lunch') => void };
+    __mock: { setGovernor: (m: 'normal' | 'thrifty' | 'lunch') => void; passPlan: (id?: string) => void };
   }
 }
 
@@ -103,14 +103,14 @@ test('onboarding to ownership, in mock mode', async ({ page }) => {
   await expect(page.getByTestId('card-KLN-01')).toBeVisible();
   await shot(page, '10-task-board');
   await page.getByTestId('card-KLN-01').click();
-  await expect(page.locator('.step[data-state="locked"]')).toHaveCount(5);
+  await expect(page.locator('.step[data-state="locked"]')).toHaveCount(6); // review, quiz, explain, plan, change, own
   await shot(page, '11-ticket-not-started');
   await page.getByRole('button', { name: 'Start ticket' }).click();
 
   // ---- review
   await expect(page.getByTestId('review')).toBeVisible();
   await expect(page.locator('.step[data-state="current"]')).toHaveAttribute('data-stage', 'review');
-  await expect(page.locator('.step[data-state="locked"]')).toHaveCount(4);
+  await expect(page.locator('.step[data-state="locked"]')).toHaveCount(5);
   await page.locator('.step[data-stage="quiz"] .step-link').click({ force: true });
   await expect(page).toHaveURL(/\/review$/); // locked step does not navigate
   await shot(page, '12-review-stats');
@@ -181,18 +181,25 @@ test('onboarding to ownership, in mock mode', async ({ page }) => {
   await page.getByRole('button', { name: "I'm done explaining" }).click();
   await expect(page.getByTestId('rubric')).toContainText('You covered the points that matter');
   await shot(page, '21-explain-rubric');
-  await page.getByRole('link', { name: 'Go to the change request' }).click();
+  await page.getByRole('link', { name: 'Plan the change' }).click();
+
+  // ---- plan: change waits for it (the plan journey itself is e2e/plan.spec.ts)
+  await expect(page.getByTestId('plan')).toBeVisible();
+  await expect(page.locator('.step[data-stage="change"]')).toHaveAttribute('data-state', 'locked');
+  await page.evaluate(() => window.__mock.passPlan());
+  await expect(page.locator('.step[data-stage="plan"]')).toHaveAttribute('data-state', 'done');
+  await page.locator('.step[data-stage="change"] .step-link').click();
 
   // ---- change
   const ch = page.getByTestId('change');
-  await expect(ch).toContainText('skip the warmup requests');
-  await expect(ch).toContainText('git push origin luigi/skip-warmup');
+  await expect(ch).toContainText('Late sends.');
+  await expect(ch).toContainText('git push origin luigi/kln-01-fixes');
   await expect(ch).toContainText('kiln-bench');
   await page.getByLabel('Branch name').fill('luigi/wrong-branch');
   await page.getByRole('button', { name: 'Check my branch' }).click();
   await expect(page.getByTestId('change-result')).toContainText('Some tests fail');
   await shot(page, '22-change-failing');
-  await page.getByLabel('Branch name').fill('luigi/skip-warmup');
+  await page.getByLabel('Branch name').fill('luigi/kln-01-fixes');
   await page.getByRole('button', { name: 'Check my branch' }).click();
   await expect(page.getByTestId('change-result')).toContainText('All tests pass');
   await shot(page, '23-change-passing');
@@ -215,7 +222,7 @@ test('onboarding to ownership, in mock mode', async ({ page }) => {
 
   // ---- debriefs
   await page.getByRole('link', { name: 'Read the debriefs' }).click();
-  await expect(page.locator('.debrief-card')).toHaveCount(4);
+  await expect(page.locator('.debrief-card')).toHaveCount(5); // review, quiz, explain, plan, change
   await shot(page, '26-debriefs');
 
   // ---- board shows it done; governor banner; light theme; narrow window; office

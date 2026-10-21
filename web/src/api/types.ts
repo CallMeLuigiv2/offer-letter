@@ -1,8 +1,9 @@
-// Types for the HTTP API (docs/ARCHITECTURE.md §2–§4) and websocket events (§3).
+// Types for the HTTP API (docs/ARCHITECTURE.md §2–§4, §8.4) and websocket events (§3).
+import type { Lang, PlanDoc, Prediction, Ref, ReplyChoice, TicketKind, Weight, WorkedPlan } from '../plan/engine';
 
 export type Severity = 'blocker' | 'major' | 'minor' | 'nit' | 'praise';
 export type Verdict = 'approve' | 'request_changes' | 'comment';
-export type Stage = 'review' | 'quiz' | 'explain' | 'change' | 'own';
+export type Stage = 'review' | 'quiz' | 'explain' | 'plan' | 'change' | 'own';
 export type TicketStage = Stage | 'done';
 export type TicketStatus = 'backlog' | 'assigned' | 'in_progress' | 'done';
 export type GovernorMode = 'normal' | 'thrifty' | 'lunch';
@@ -99,6 +100,8 @@ export interface Ticket {
   kit_path?: string;
   started_at: string | null;
   done_at: string | null;
+  /** The ticket's own stage list (§8.1). Older rows without it use the v0.1 list. */
+  stages?: string[];
 }
 
 export interface StageResult {
@@ -278,6 +281,118 @@ export interface Health {
   version: string;
 }
 
+// ---- the Plan stage (§8) ----------------------------------------------------------
+
+export interface PlanFixture {
+  id: string;
+  label: string;
+  args_hint: string;
+}
+export interface PlanContext {
+  lang: Lang;
+  weight_default: Weight;
+  kind: TicketKind;
+  request_md: string;
+  requester: string | null;
+  reviewer: string;
+  repo: string;
+  base_ref: string;
+  fixtures: PlanFixture[];
+  worked: WorkedPlan[];
+  size_hours: number;
+  /** Contract note (web-plan): an optional real-life framing for the bridge move. */
+  story?: { source: string | null; story_md: string } | null;
+}
+export type RunOutcome = 'pass' | 'fail' | 'error' | 'skipped';
+export interface PlanRun {
+  example_id: string;
+  outcome: RunOutcome;
+  output: string;
+  predicted: Prediction | null;
+  matched: boolean | null;
+  ref: string;
+  created_at: string;
+}
+export interface PlanReply {
+  id: string;
+  question_id: string;
+  choice: ReplyChoice;
+  body_md: string;
+  persona_md: string;
+  rung: number;
+  created_at: string;
+}
+export interface PlanQuestion {
+  id: string;
+  ref?: Ref | null;
+  ask_md: string;
+  why_md: string;
+  status: 'open' | 'answered';
+  rung: number;
+  replies: PlanReply[];
+}
+export interface PlanReview {
+  id: string;
+  round: number;
+  persona_id: string;
+  intent_md: string;
+  intent_reply: 'yes' | 'no' | 'partly' | null;
+  intent_note?: string | null;
+  questions: PlanQuestion[];
+  created_at: string;
+}
+export interface PlanState {
+  doc: PlanDoc | null;
+  version: number;
+  context: PlanContext;
+  runs: Record<string, PlanRun>;
+  review: PlanReview | null;
+  submitted_at: string | null;
+}
+export interface OutlineSymbol {
+  name: string;
+  qualname: string;
+  kind: 'function' | 'async_function' | 'method' | 'class';
+  line: number;
+  signature: string;
+  doc: string;
+}
+export interface Outline {
+  ref: string;
+  files: { path: string; symbols: OutlineSymbol[] }[];
+}
+export interface PlanCheckRow {
+  /** e.g. "seam.exists:<path>::<symbol>", "callers.match", "step.existing:<id>", "example.target:<id>", "example.fixture:<id>" */
+  id: string;
+  ok: boolean;
+  severity: string;
+  msg: string;
+  /** callers.match: {found, missed, wrong: [names he listed]}; others carry refs. Older servers sent a string. */
+  detail: string | Record<string, unknown>;
+}
+export interface PlanSubmit {
+  passed: boolean;
+  missing: string[];
+  debrief_md: string;
+}
+export interface PlanDrift {
+  branch?: string;
+  planned_files: string[];
+  touched_files: string[];
+  planned_symbols: string[];
+  touched_symbols: string[];
+  examples: { id: string; status: string }[];
+  appetite_blocks: number | null;
+  /** Minutes worked on the ticket (null if no sessions); the UI converts to 30-minute blocks. */
+  worked_minutes: number | null;
+  silent: { kind: string; name: string }[];
+}
+export interface RetroAnswers {
+  surprised: string;
+  next_time: string;
+  why: Record<string, string>;
+}
+
 export type ServerEvent =
   | { type: 'message.created'; data: Message }
   | { type: 'teammate.typing'; data: { persona_id: string; channel_id: string; typing: boolean } }
@@ -287,7 +402,9 @@ export type ServerEvent =
   | { type: 'stage.result'; data: StageResult }
   | { type: 'explain.turn'; data: ExplainTurn }
   | { type: 'governor.updated'; data: Governor }
-  | { type: 'notice'; data: { level: 'info' | 'warn'; text: string } };
+  | { type: 'notice'; data: { level: 'info' | 'warn'; text: string } }
+  | { type: 'plan.review'; data: PlanReview }
+  | { type: 'plan.reply'; data: { review_id: string; question: PlanQuestion } };
 
 export interface Api {
   health(): Promise<Health>;
@@ -318,4 +435,18 @@ export interface Api {
   governor(): Promise<Governor>;
   debriefs(ticketId: string): Promise<Debrief[]>;
   clockIn(minutes: number): Promise<{ standup_channel_id: string }>;
+
+  // §8.4 the Plan stage
+  plan(ticketId: string): Promise<PlanState>;
+  savePlan(ticketId: string, doc: PlanDoc, version: number): Promise<{ version: number }>;
+  planOutline(ticketId: string): Promise<Outline>;
+  planCheck(ticketId: string): Promise<{ checks: PlanCheckRow[] }>;
+  planRun(ticketId: string, exampleIds?: string[]): Promise<{ runs: PlanRun[] }>;
+  planReview(ticketId: string): Promise<PlanReview>;
+  planIntent(ticketId: string, reply: 'yes' | 'no' | 'partly', note?: string): Promise<PlanReview>;
+  planReply(ticketId: string, questionId: string, choice: ReplyChoice, body_md: string): Promise<PlanQuestion>;
+  planSubmit(ticketId: string): Promise<PlanSubmit>;
+  planToBranch(ticketId: string, overwrite?: boolean): Promise<{ written: string[] }>;
+  planDrift(ticketId: string, branch?: string): Promise<PlanDrift>;
+  planRetro(ticketId: string, answers: RetroAnswers): Promise<{ persona_md: string; debrief_md: string }>;
 }

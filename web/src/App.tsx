@@ -13,6 +13,7 @@ import { ReviewPage } from './review/ReviewPage';
 import { ChangePage } from './ticket/Change';
 import { ExplainPage } from './ticket/Explain';
 import { OwnPage } from './ticket/Own';
+import { PlanPage } from './plan/PlanPage';
 import { QuizPage } from './ticket/Quiz';
 import { Debriefs, TicketLayout, TicketOverview } from './ticket/TicketLayout';
 import { dmPartner, parseAvatar } from './lib/util';
@@ -79,6 +80,7 @@ export function App() {
             <Route path="review" element={<ReviewPage />} />
             <Route path="quiz" element={<QuizPage />} />
             <Route path="explain" element={<ExplainPage />} />
+            <Route path="plan" element={<PlanPage />} />
             <Route path="change" element={<ChangePage />} />
             <Route path="own" element={<OwnPage />} />
             <Route path="debriefs" element={<Debriefs />} />

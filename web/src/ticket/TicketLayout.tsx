@@ -2,7 +2,7 @@ import { motion } from 'motion/react';
 import { Link, NavLink, Outlet, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { api } from '../api';
 import type { Stage, TicketDetail } from '../api';
-import { currentStage, STAGES, STAGE_LABEL, stageRoute, stageState, STATUS_LABEL } from '../lib/stages';
+import { currentStage, lockedHint, STAGE_LABEL, stageRoute, stageState, STATUS_LABEL, ticketStages } from '../lib/stages';
 import { useStore } from '../store';
 import { errText, useAsync } from '../ui/hooks';
 import { Markdown } from '../ui/Markdown';
@@ -13,10 +13,10 @@ export interface TicketCtx {
 }
 export const useTicketCtx = () => useOutletContext<TicketCtx>();
 
-export function Stepper({ ticket, id }: { ticket: Pick<TicketDetail, 'status' | 'stage'>; id: string }) {
+export function Stepper({ ticket, id }: { ticket: Pick<TicketDetail, 'status' | 'stage' | 'stages'>; id: string }) {
   return (
     <ol className="stepper" aria-label="Stages">
-      {STAGES.map((s, i) => {
+      {ticketStages(ticket).map((s, i) => {
         const st = stageState(ticket, s);
         const inner = (
           <>
@@ -35,7 +35,7 @@ export function Stepper({ ticket, id }: { ticket: Pick<TicketDetail, 'status' | 
         return (
           <li key={s} className={`step ${st}`} data-stage={s} data-state={st}>
             {st === 'locked' ? (
-              <span className="step-link" aria-disabled="true" title="Finish the stage before it to unlock this one">
+              <span className="step-link" aria-disabled="true" title={lockedHint(ticket, s)}>
                 {inner}
               </span>
             ) : (
@@ -126,19 +126,25 @@ export function TicketOverview() {
   );
 }
 
-export function Locked({ stage }: { stage: Stage }) {
+export function Locked({ stage, ticket }: { stage: Stage; ticket?: Pick<TicketDetail, 'id' | 'status' | 'stage' | 'stages'> }) {
+  const cur = ticket ? currentStage(ticket) : null;
   return (
     <div className="locked-panel" data-testid="locked">
       <span className="lock-glyph" aria-hidden="true">🔒</span>
       <h2>{STAGE_LABEL[stage]} is locked</h2>
-      <p className="muted">Finish the stage before it first. Each stage unlocks when the one before it passes.</p>
+      <p className="muted">{ticket ? lockedHint(ticket, stage) : 'Finish the stage before it first.'} Each stage unlocks when the one before it passes.</p>
+      {ticket && cur && cur !== stage && (
+        <Link className="btn primary" to={stageRoute(ticket.id, cur)}>
+          Go to {STAGE_LABEL[cur]}
+        </Link>
+      )}
     </div>
   );
 }
 
 export function StageGate({ stage, children }: { stage: Stage; children: React.ReactNode }) {
   const { detail } = useTicketCtx();
-  if (stageState(detail, stage) === 'locked') return <Locked stage={stage} />;
+  if (stageState(detail, stage) === 'locked') return <Locked stage={stage} ticket={detail} />;
   return <>{children}</>;
 }
 
@@ -151,7 +157,7 @@ export function Debriefs() {
       <h2>Debriefs</h2>
       {error && <p className="error">{error}</p>}
       {list.length === 0 && !error && <p className="muted">No debriefs yet. They appear here after each stage.</p>}
-      {STAGES.map((s) => list.filter((d) => d.stage === s)).flat().map((d) => (
+      {ticketStages(detail).map((s) => list.filter((d) => d.stage === s)).flat().map((d) => (
         <article key={d.stage} className="debrief-card">
           <header>
             <b>{STAGE_LABEL[d.stage]}</b>

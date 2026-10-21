@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
-import { stageState } from '../lib/stages';
+import { stageState, ticketStages } from '../lib/stages';
+import { DriftRetro } from '../plan/DriftRetro';
 import { useStore } from '../store';
 import { errText } from '../ui/hooks';
 import { StageGate, useTicketCtx } from './TicketLayout';
@@ -21,6 +22,7 @@ function OwnInner() {
   const [busy, setBusy] = useState(false);
   const [url, setUrl] = useState<string | null>(null);
   const finished = stageState(detail, 'own') === 'done';
+  const planned = ticketStages(detail).includes('plan') && stageState(detail, 'change') === 'done';
 
   useEffect(() => {
     if (!confirm) return;
@@ -69,6 +71,8 @@ function OwnInner() {
           </button>
         )}
       </section>
+
+      {planned && <DriftRetro ticketId={detail.id} />}
 
       {confirm && (
         <div className="modal-back" onClick={() => setConfirm(false)}>
