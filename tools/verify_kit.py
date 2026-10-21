@@ -43,7 +43,7 @@ SLACK = 2  # server/review.py matches a comment within [line_start - 2, line_end
 SERVER_PYTEST = ["uv", "run", "--with", "pytest", "pytest"]  # server config.py pytest_cmd
 GRADER_COPY = "_grader"  # server change.py
 SECRET_FILES = {"answer_key.json", "quiz.json", "explain.json", "change.json", "debrief.md", "plan.json",
-                "plan_key.json"}
+                "plan_key.json", "rubric.json"}
 FIXTURE_READY_S = 10  # a plan fixture must be ready this fast (ARCHITECTURE 8.5)
 BANNED = re.compile(r"answer[_ ]key|why_not_a_bug|planted|\bdecoy|KLN\d\d-\d", re.IGNORECASE)
 
@@ -51,7 +51,13 @@ BANNED = re.compile(r"answer[_ ]key|why_not_a_bug|planted|\bdecoy|KLN\d\d-\d", r
 class Checks:
     def __init__(self) -> None:
         self.failed: list[str] = []
+        self.warned: list[str] = []
         self.passed = 0
+
+    def warn(self, msg: str) -> None:
+        """Worth knowing, not a reason to hold the ticket back (e.g. explainer media not rendered yet)."""
+        self.warned.append(msg)
+        print(f"  warn  {msg}")
 
     def ok(self, cond: bool, msg: str, detail: str = "") -> bool:
         if cond:
@@ -278,6 +284,183 @@ def check_worked_plans(c: Checks, content: Path) -> None:
 
 # -- 3. quiz -------------------------------------------------------------------------------
 
+# -- 2d. explainer videos (ARCHITECTURE 9.1) -------------------------------------------------
+
+JUDGEMENT = re.compile(r"\b(?:bugs?|wrong|broken|problems?|mistakes?|lost|dropped|unfortunately|should|missing|"
+                       r"vanish\w*)\b", re.IGNORECASE)
+EXPLAINER_RUN = 6  # words; a describe-mode video sharing a run this long with the answer key gives it away
+MENTION = re.compile(r"([\w/.-]+\.py)(?:\s*·\s*([\w.]+(?:\s*,\s*[\w.]+)*))?")
+
+
+def rubric_texts(q: dict) -> list[str]:
+    """Every prose field of one explainer rubric question (all server-only)."""
+    out = [q.get("reveal_md", ""), q.get("model_answer_md", ""), q.get("topic", ""), (q.get("bridge") or {}).get("real", "")]
+    out += [k.get("idea", "") for k in q.get("key_ideas", [])] + [w.get("idea", "") for w in q.get("wrong_ideas", [])]
+    out += [str(a) for a in q.get("accepted", [])]
+    return [s for s in out if s]
+
+
+def runs_of(text: str, n: int) -> set[str]:
+    w = words(text)
+    return {" ".join(w[i:i + n]) for i in range(len(w) - n + 1)}
+
+
+def changed_functions(head_dir: Path, diff_text: str) -> list[tuple[str, str]]:
+    """(path, qualname) of every function (or class body) in the PR head that has an added line, innermost wins."""
+    import ast
+
+    out: list[tuple[str, str]] = []
+    for path, f in sorted(diffs.parse(diff_text).items()):
+        file = head_dir / path
+        if not path.endswith(".py") or not file.is_file() or not f.added:
+            continue
+        try:
+            tree = ast.parse(file.read_text(encoding="utf-8"))
+        except SyntaxError:
+            continue
+        spans: list[tuple[int, int, str]] = []
+
+        def walk(body: list[ast.stmt], prefix: str) -> None:
+            for node in body:
+                if isinstance(node, ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef):
+                    qual = f"{prefix}{node.name}"
+                    first = min([node.lineno, *(d.lineno for d in node.decorator_list)])
+                    spans.append((first, node.end_lineno or node.lineno, qual))
+                    walk(node.body, qual + ".")
+
+        walk(tree.body, "")
+        for line in sorted(f.added):
+            inside = [s for s in spans if s[0] <= line <= s[1]]
+            if inside:
+                qual = min(inside, key=lambda s: s[1] - s[0])[2]
+                if (path, qual) not in out:
+                    out.append((path, qual))
+    return out
+
+
+def chapter_mentions(function: str) -> list[tuple[str, list[str]]]:
+    """'openloop.py · OpenLoopRunner.run, _fire  (and cli.py · _run)' -> [(openloop.py, [OpenLoopRunner.run,
+    OpenLoopRunner._fire]), (cli.py, [_run])]. A bare name after a dotted one belongs to the same class. A file with
+    no names stands for the whole file."""
+    out = []
+    for m in MENTION.finditer(function or ""):
+        names, owner = [], ""
+        for raw in (m.group(2) or "").split(","):
+            name = raw.strip()
+            if not name:
+                continue
+            if "." in name:
+                owner = name.rsplit(".", 1)[0]
+            elif owner:
+                names.append(f"{owner}.{name}")
+            names.append(name)
+        out.append((m.group(1), names))
+    return out
+
+
+def covered(path: str, qual: str, mentions: list[tuple[str, list[str]]]) -> bool:
+    """A changed function is covered by a chapter naming it, its class (a class covers its methods), one of its class's
+    members (that covers the class's own body, e.g. dataclass fields), or its whole file."""
+    for file, names in mentions:
+        if path == file or path.endswith("/" + file):
+            owners = {n.rsplit(".", 1)[0] for n in names if "." in n}
+            if not names or qual in names or qual in owners or any(qual.startswith(n + ".") for n in names):
+                return True
+    return False
+
+
+def uncovered(changed: list[tuple[str, str]], mentions: list[tuple[str, list[str]]]) -> list[str]:
+    """Source functions without a chapter, and changed test files no chapter names (tests count per file)."""
+    out, test_files = [], []
+    for path, qual in changed:
+        if plan_code.is_test_path(path):
+            if path not in test_files:
+                test_files.append(path)
+        elif not covered(path, qual, mentions):
+            out.append(f"{path}::{qual}")
+    return out + [p for p in test_files if not any(p == f or p.endswith("/" + f) for f, _ in mentions)]
+
+
+def check_explainers(c: Checks, t: Ticket, kit: dict, head_dir: Path) -> None:
+    """Scripts and the server-only rubric agree; describe-mode videos only show (no judgement words, no answer-key
+    runs, no branches, predict questions only) and give every changed function a chapter. Media is a warning."""
+    root = t.root / "explainers"
+    if not root.is_dir():
+        return
+    rubric_path = root / "rubric.json"
+    rubric = (read_json(rubric_path).get("questions") or {}) if rubric_path.is_file() else {}
+    c.ok(rubric_path.is_file(), f"{t.id}: explainers/rubric.json exists (server-only answers for the pauses)")
+    scripts = {d.name: read_json(d / "script.json") for d in sorted(root.iterdir()) if (d / "script.json").is_file()}
+    script_qs: dict[str, tuple[str, dict]] = {}
+    for video, s in scripts.items():
+        c.ok(s.get("id") == video and s.get("unlock") in ("review", "after_review", "plan")
+             and s.get("mode") in ("describe", "explain") and bool(s.get("chapters")),
+             f"{t.id} explainer {video}: id matches its folder, unlock and mode are known, it has chapters")
+        for ch in s.get("chapters", []):
+            q = ch.get("question")
+            if isinstance(q, dict):
+                script_qs[q.get("id")] = (video, q)
+    c.ok(set(script_qs) == set(rubric), f"{t.id} explainers: every pause question has a rubric entry and vice versa "
+                                        f"({len(script_qs)} questions)",
+         f"no rubric: {sorted(set(script_qs) - set(rubric))}\nnot in a script: {sorted(set(rubric) - set(script_qs))}")
+    for qid, (video, q) in sorted(script_qs.items()):
+        rq = rubric.get(qid) or {}
+        branches = {b.get("id") for b in q.get("branches", [])}
+        if q.get("kind") == "predict":
+            c.ok(rq.get("correct") in {o.get("id") for o in q.get("options", [])} and bool(rq.get("reveal_md")),
+                 f"{t.id} {video} {qid}: the correct option is one of the options and has a reveal")
+        else:
+            wrong_branches = {w.get("branch") for w in rq.get("wrong_ideas", []) if w.get("branch")}
+            c.ok(any(k.get("must") for k in rq.get("key_ideas", [])) and bool(rq.get("model_answer_md"))
+                 and wrong_branches <= branches,
+                 f"{t.id} {video} {qid}: open rubric has a must idea, a model answer, and its branch scenes exist",
+                 f"branches named in the rubric but not scripted: {sorted(wrong_branches - branches)}")
+    key = kit["answer_key.json"]
+    key_runs: set[str] = set()
+    for i in key.get("issues", []):
+        for field in ("title", "explanation_md", "hint_md"):
+            key_runs |= runs_of(i.get(field, ""), EXPLAINER_RUN)
+    diff = git("diff", "--no-color", "--unified=0", f"origin/{t.base}...origin/{t.head}", cwd=head_dir)
+    changed = changed_functions(head_dir, diff)
+    for video, s in scripts.items():
+        if s.get("mode") != "describe":
+            continue
+        chapters = s.get("chapters", [])
+        questions = [ch["question"] for ch in chapters if isinstance(ch.get("question"), dict)]
+        c.ok(all(q.get("kind") == "predict" and not q.get("branches") for q in questions),
+             f"{t.id} {video}: describe mode asks only predict questions and has no branches")
+        spoken = [(ch["id"], b.get(k, "")) for ch in chapters for b in ch.get("beats", []) for k in ("say", "caption")]
+        judged = sorted({f"{cid}: {m.group(0)}" for cid, text in spoken for m in JUDGEMENT.finditer(text or "")})
+        c.ok(not judged, f"{t.id} {video}: no judgement words in narration or captions", "\n".join(judged))
+        visible = spoken + [(ch["id"], ch.get("title", "")) for ch in chapters]
+        visible += [(ch["id"], txt) for ch in chapters if isinstance(ch.get("question"), dict)
+                    for txt in [ch["question"].get("prompt", ""), *(o.get("text", "") for o in ch["question"].get("options", []))]]
+        shared = sorted({f"{cid}: \"{r}\"" for cid, text in visible for r in runs_of(text, EXPLAINER_RUN) & key_runs})
+        c.ok(not shared, f"{t.id} {video}: no {EXPLAINER_RUN}-word run from the answer key's titles, explanations or "
+                         f"hints", "\n".join(shared[:20]))
+        mentions = [m for ch in chapters for m in chapter_mentions(ch.get("function", ""))]
+        bare = uncovered(changed, mentions)
+        c.ok(bool(changed) and not bare, f"{t.id} {video}: every function the PR changes has a chapter "
+                                         f"({len(changed)} changed; test files count as one each)",
+             "no chapter's `function` names these:\n" + "\n".join(bare))
+    for video, s in scripts.items():
+        manifest_path = root / video / "media" / "manifest.json"
+        if not manifest_path.is_file():
+            c.warn(f"{t.id} {video}: not rendered yet (no media/manifest.json); the player shows the narration as text")
+            continue
+        manifest = read_json(manifest_path)
+        files = {ch.get("id"): ch.get("file") for ch in manifest.get("chapters", [])}
+        media = manifest_path.parent
+        missing = [ch["id"] for ch in s.get("chapters", []) if not (files.get(ch["id"]) and (media / files[ch["id"]]).is_file())]
+        scripted = {b.get("id") for ch in s.get("chapters", []) for b in (ch.get("question") or {}).get("branches", [])}
+        rendered = manifest.get("branches") or {}
+        missing += [b for b in sorted(scripted) if not (rendered.get(b, {}).get("file") and (media / rendered[b]["file"]).is_file())]
+        if missing:
+            c.warn(f"{t.id} {video}: clips not rendered yet: {', '.join(missing)}")
+        else:
+            c.ok(True, f"{t.id} {video}: every chapter and branch clip is rendered ({manifest.get('quality', '?')})")
+
+
 def check_quiz(c: Checks, t: Ticket, kit: dict, checkouts: dict[str, Path]) -> None:
     for q in kit["quiz.json"].get("questions", []):
         v = q.get("verify")
@@ -368,6 +551,10 @@ def secret_prose(t: Ticket, kit: dict) -> list[tuple[str, str]]:
         plan_key = read_json(key_path)
         texts += [(f"plan_key trap {x.get('id')}", x.get("md", "")) for x in plan_key.get("traps", [])]
         texts += [(f"plan_key behaviour {x.get('id')}", x.get("kind_md", "")) for x in plan_key.get("behaviours", [])]
+    rubric_path = t.root / "explainers" / "rubric.json"
+    if rubric_path.is_file():
+        for qid, q in (read_json(rubric_path).get("questions") or {}).items():
+            texts += [(f"explainer rubric {qid}", s) for s in rubric_texts(q)]
     out = []
     for label, text in texts:
         for piece in QUOTED.split(text):
@@ -491,6 +678,7 @@ def verify(pack: Pack, only: str | None, quick: bool, keep: bool, content_dir: P
         check_answer_key(c, t, kit, head_dir)
         main_dir = tmp / f"{t.repo}-main"
         check_plan(c, pack, t, quick, head_dir, main_dir)
+        check_explainers(c, t, kit, head_dir)
         for name, source in kit["change.json"].get("grader_copies", {}).items():
             grader = t.root / kit["change.json"].get("grader_dir", "grader")
             c.ok((grader / name).read_bytes() == (main_dir / source).read_bytes(),
@@ -524,7 +712,10 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     started = time.perf_counter()
     c = verify(pack, args.only, args.quick, args.keep, args.content)
-    print(f"\n{c.passed} checks passed, {len(c.failed)} failed ({time.perf_counter() - started:.0f} s)")
+    print(f"\n{c.passed} checks passed, {len(c.failed)} failed, {len(c.warned)} warnings "
+          f"({time.perf_counter() - started:.0f} s)")
+    for msg in c.warned:
+        print(f"  warn  {msg}")
     for msg in c.failed:
         print(f"  FAIL  {msg}")
     return 1 if c.failed else 0
