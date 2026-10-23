@@ -32,3 +32,6 @@ docs/spikes/*/media/
 content/companies/*/tickets/*/explainers/*/media/
 tools/explainer/cache/
 tools/explainer/media/
+
+# Scraped job postings used for research; kept local, not redistributed
+research/*.csv
